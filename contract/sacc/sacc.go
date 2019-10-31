@@ -23,7 +23,7 @@ type SimpleAsset struct {
 // 퀴즈 구조체 (World State에 담기는 정보)
 type Quiz struct {
 	ObjectType	 string `json:"docType"` // CouchDB의 인덱스 기능을 쓰기위한 파라미터, 이 오브젝트 타입에 만든 구조체 이름을 넣으면 인덱스를 찾을 수 있음
-	Id	 	 	 string `json:"id"` 	 // 퀴즈 식별값
+	Id			 string `json:"id"` 	 // 퀴즈 식별값
 	Title   	 string `json:"title"` 	 // 퀴즈 제목
 	Begin		 string `json:"begin"`	 // 시작 시간
 	End			 string `json:"end"`	 // 종료 시간
@@ -51,8 +51,8 @@ func (t *SimpleAsset) Invoke(stub shim.ChaincodeStubInterface) peer.Response {
 	var err error
 	if fn == "setQuiz" {					// Quiz 생성
 		result, err = setQuiz(stub, args)
-	} else if fn == "getQuizList" {			// 종료(Status: 2)인 경우에만 Count값 Return 할 것
-		result, err = getQuizList(stub) 
+	} else if fn == "getQuiz" {			// 종료(Status: 2)인 경우에만 Count값 Return 할 것
+		result, err = getQuiz(stub, args) 
 	} else if fn == "changeQuizStatus" {	// 시간 정보에 따라 Status 변경
 		result, err = changeQuizStatus(stub, args)
 	} else if fn == "choice" {				// 선택
@@ -74,7 +74,7 @@ func setQuiz(stub shim.ChaincodeStubInterface, args []string) (string, error) {
 	// JSON  변환
 	var quiz = Quiz {
 		ObjectType: "Quiz",
-		Id: 		args[0],
+		Id:			args[0],
 		Title: 		args[1],
 		Begin: 		args[2],
 		End: 		args[3],
@@ -96,46 +96,27 @@ func setQuiz(stub shim.ChaincodeStubInterface, args []string) (string, error) {
 	return string(quizAsBytes), nil
 }
 
-func getQuizList(stub shim.ChaincodeStubInterface) (string, error) {
+func getQuiz(stub shim.ChaincodeStubInterface, args[] string) (string, error) {
+	if len(args) != 1 {
+		return "", fmt.Errorf("Incorrect arguments. Please input 1 arg.")
+	}
+	id := args[0]
+	quizAsBytes, err := stub.GetState(id)
 
-	iter, err := stub.GetStateByRange("0", "9")
+	quizToTransfer := Quiz{}
+	err = json.Unmarshal(quizAsBytes, &quizToTransfer)
 	if err != nil {
-		return "", fmt.Errorf("Failed to get all keys with error: %s", err)
+		return "", fmt.Errorf("%s", err)
 	}
-	defer iter.Close()
-
-	var buffer string
-	buffer = "["
-	comma := false
-	for iter.HasNext() {
-		res, err := iter.Next()
-		if err != nil {
-			return "", fmt.Errorf("%s", err)
-		}
-		if comma == true {
-			buffer += ", "
-		}
-		quizToTransfer := Quiz{}
-		err = json.Unmarshal(res.Value, &quizToTransfer)
-		if err != nil {
-			return "", fmt.Errorf("%s", err)
-		}
-		
-		if quizToTransfer.Status != "2" {
-			quizToTransfer.Count1 = ""
-			quizToTransfer.Count2 = ""
-		}
-
-		quizJSONasBytes, _ := json.Marshal(quizToTransfer)
-		buffer += string(quizJSONasBytes)
-		fmt.Printf(res.Key, quizJSONasBytes)
-		comma = true
+	
+	if quizToTransfer.Status != "2" {
+		quizToTransfer.Count1 = ""
+		quizToTransfer.Count2 = ""
 	}
-	buffer += "]"
 
-	fmt.Println(buffer)
+	quizJSONasBytes, _ := json.Marshal(quizToTransfer)
 
-	return string(buffer), nil
+	return string(quizJSONasBytes), nil
 }
 
 func changeQuizStatus(stub shim.ChaincodeStubInterface, args []string) (string, error) {
@@ -190,7 +171,7 @@ func choice(stub shim.ChaincodeStubInterface, args[] string) (string, error) {
 		return "", fmt.Errorf("Incorrect arguments. Please input 3 args.")
 	}
 
-	id 		:= args[0]
+	id		:= args[0]
 	choice 	:= args[1]
 	user	:= args[2]
 
