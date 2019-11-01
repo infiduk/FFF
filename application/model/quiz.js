@@ -18,7 +18,7 @@ class QuizModel {
                 console.log('Transaction has been submitted');
 
                 // Disconnect from the gateway.
-                await hf.gateway.disconnect();
+                // await hf.gateway.disconnect();
                 /* ----------------------------- LEDGER -----------------------------*/
                 resolve(quiz._id);
             } catch (err) {
@@ -51,7 +51,7 @@ class QuizModel {
                 const result = await hf.contract.evaluateTransaction('getQuiz', id.toString());
                 // Disconnect from the gateway.
                 
-                await hf.gateway.disconnect();
+                // await hf.gateway.disconnect();
                 console.log(`Transaction has been evaluated, result is: ${result.toString()}`);
                 /* ----------------------------- LEDGER -----------------------------*/
                 resolve(result);
@@ -78,14 +78,14 @@ class QuizModel {
         return new Promise(async (resolve, reject) => {
             try {
                 /* ----------------------------- LEDGER -----------------------------*/
-                // // HF connect (Wallet -> Chaincode -> Network)
-                // const hf = await require('../model/hf-connection');
+                // HF connect (Wallet -> Chaincode -> Network)
+                const hf = await require('../model/hf-connection');
                 
-                // // Submit
-                // const quizResult = await hf.contract.submitTransaction('changeQuizStatus', _id.toString());
-                // console.log('Transaction has been submitted');
+                // Submit
+                const quizResult = await hf.contract.submitTransaction('changeQuizStatus', _id.toString());
+                console.log('Transaction has been submitted');
 
-                // // Disconnect from the gateway.
+                // Disconnect from the gateway.
                 // await hf.gateway.disconnect();
                 /* ----------------------------- LEDGER -----------------------------*/
 
@@ -97,7 +97,7 @@ class QuizModel {
                 }
                 if(doc.status < 2) doc.status ++;
 
-                // doc.result = quizResult;
+                doc.result = quizResult;
 
                 const result = await doc.save();
                 console.log('Update status success :', result);
