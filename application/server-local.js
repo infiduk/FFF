@@ -1,3 +1,6 @@
+// DB Initialize
+const timeModule = require('./modules/time');
+
 // 외부 모듈 포함
 const express = require('express');
 const app = express();
@@ -17,5 +20,11 @@ app.get('/', (req, res)=>{
 })
 
 // server start
-app.listen(PORT, HOST);
+app.listen(PORT, HOST, async () => {
+    try {
+        await timeModule.initQuizStatus();
+    } catch (err) {
+        console.log(err);
+    }
+});
 console.log(`Running on http://${HOST}:${PORT}`);

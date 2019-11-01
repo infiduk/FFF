@@ -120,11 +120,10 @@ func getQuiz(stub shim.ChaincodeStubInterface, args[] string) (string, error) {
 }
 
 func changeQuizStatus(stub shim.ChaincodeStubInterface, args []string) (string, error) {
-	if len(args) != 2 {
-		return "", fmt.Errorf("Incorrect arguments. Please input 2 args.")
+	if len(args) != 1 {
+		return "", fmt.Errorf("Incorrect arguments. Please input 1 args.")
 	}
-	id		:= args[0]
-	status 	:= args[1]
+	id := args[0]
 
 	quizAsBytes, err := stub.GetState(id)
 	if err != nil {
@@ -138,9 +137,14 @@ func changeQuizStatus(stub shim.ChaincodeStubInterface, args []string) (string, 
 	if err != nil {
 		return "", fmt.Errorf("%s", err)
 	}
-	quizToTransfer.Status = status
+	status, err := strconv.Atoi(quizToTransfer.Status)
+	if err != nil {
+		return "", fmt.Errorf("%s", err)
+	}
+	status += 1
+	quizToTransfer.Status = strconv.Itoa(status)
 
-	if status == "2" {
+	if quizToTransfer.Status == "2" {
 		count1, err := strconv.Atoi(quizToTransfer.Count1)
 		if err != nil {
 			return "", fmt.Errorf("%s", err)
@@ -163,7 +167,7 @@ func changeQuizStatus(stub shim.ChaincodeStubInterface, args []string) (string, 
 	if err != nil {
 		return "", fmt.Errorf("%s", err)
 	}
-	return string("Status changed!"), nil
+	return string(quizToTransfer.Result), nil
 }
 
 func choice(stub shim.ChaincodeStubInterface, args[] string) (string, error) {

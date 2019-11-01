@@ -1,8 +1,8 @@
 #chaincode install
-docker exec cli peer chaincode install -n sacc -v 0.1 -p github.com/sacc
+docker exec cli peer chaincode install -n sacc -v 0.6 -p github.com/sacc
 #chaincode instatiate
-docker exec cli peer chaincode instantiate -n sacc -v 0.1 -C mychannel -c '{"Args":[]}' -P 'OR ("Org1MSP.member", "Org2MSP.member","Org3MSP.member")'
-# docker exec cli peer chaincode upgrade -n sacc -v 0.2 -C mychannel -c '{"Args":[]}' -P 'OR ("Org1MSP.member", "Org2MSP.member","Org3MSP.member")'
+# docker exec cli peer chaincode instantiate -n sacc -v 0.1 -C mychannel -c '{"Args":[]}' -P 'OR ("Org1MSP.member", "Org2MSP.member","Org3MSP.member")'
+docker exec cli peer chaincode upgrade -n sacc -v 0.6 -C mychannel -c '{"Args":[]}' -P 'OR ("Org1MSP.member", "Org2MSP.member","Org3MSP.member")'
 # sleep 5
 # # echo '-------------------------------------Upgrade END-------------------------------------'
 # docker exec cli peer chaincode invoke -n sacc -C mychannel -c '{"Args":["setKey","1","1234567","제품1","박찬형","2019-10-01"]}'
