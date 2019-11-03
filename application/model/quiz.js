@@ -27,6 +27,27 @@ class QuizModel {
         });
     }
 
+    findAllFromLedger() {
+        return new Promise(async (resolve, reject) => {
+            try {
+                /* ----------------------------- LEDGER -----------------------------*/
+                // HF connect (Wallet -> Chaincode -> Network)
+                const hf = await require('../model/hf-connection');
+                
+                // Evaluate the specified transaction.
+                const result = await hf.contract.evaluateTransaction('getAllQuizzes');
+                // Disconnect from the gateway.
+                
+                // await hf.gateway.disconnect();
+                console.log(`Transaction has been evaluated, result is: ${result.toString()}`);
+                /* ----------------------------- LEDGER -----------------------------*/
+                resolve(result);
+            } catch (err) {
+                reject(err);
+            }
+        });
+    }
+
     findAll() {
         return new Promise(async (resolve, reject) => {
             try {

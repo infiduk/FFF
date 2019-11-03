@@ -53,6 +53,8 @@ func (t *SimpleAsset) Invoke(stub shim.ChaincodeStubInterface) peer.Response {
 		result, err = setQuiz(stub, args)
 	} else if fn == "getQuiz" {			// 종료(Status: 2)인 경우에만 Count값 Return 할 것
 		result, err = getQuiz(stub, args) 
+	} else if fn == "getAllQuizzes" {	// for test
+		result, err = getAllQuizzes(stub)
 	} else if fn == "changeQuizStatus" {	// 시간 정보에 따라 Status 변경
 		result, err = changeQuizStatus(stub, args)
 	} else if fn == "choice" {				// 선택
@@ -117,6 +119,36 @@ func getQuiz(stub shim.ChaincodeStubInterface, args[] string) (string, error) {
 	quizJSONasBytes, _ := json.Marshal(quizToTransfer)
 
 	return string(quizJSONasBytes), nil
+}
+
+// For test (Not used)
+func getAllQuizzes(stub shim.ChaincodeStubInterface) (string, error) {
+	iter, err := stub.GetStateByRange("0", "9")
+	if(err) != nil {
+		return "", fmt.Errorf("Failed to get all quizzes with error: %s", err)
+	}
+	defer iter.Close()
+	
+	var buffer string
+	buffer = "["
+	comma := false
+	for iter.HasNext() {
+		res, err := iter.Next()
+		if err != nil {
+			return "", fmt.Errorf("%s", err)
+		}
+		if comma == true {
+			buffer += ", "
+		}
+		buffer += string(res.Value)
+		fmt.Printf(res.Key, res.Value)
+		comma = true
+	}
+	buffer += "]"
+
+	fmt.Println(buffer)
+
+	return string(buffer), nil
 }
 
 func changeQuizStatus(stub shim.ChaincodeStubInterface, args []string) (string, error) {

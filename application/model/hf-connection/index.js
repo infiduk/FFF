@@ -1,3 +1,5 @@
+// class로 변경해보기
+
 // Hyperledger Bridge
 const { FileSystemWallet, Gateway } = require('fabric-network');
 const fs = require('fs');
