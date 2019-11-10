@@ -1,30 +1,25 @@
-const User = require('../model/schema/user');
-const passport = require('../modules/passport');
-
 const express = require('express');
 const userRouter = express.Router();
 
-const handleAuth = passport.authenticate('local', {
-    successRedirect: '/',
-    faliureRedirect: './login',
-    faliureFlash: true
-});
+const indexGen = require('../modules/indexGen')
+
+const { FileSystemWallet, Gateway, X509WalletMixin } = require('fabric-network');
+const fs = require('fs');
+const path = require('path');
+
+const ccpPath = path.resolve(__dirname, '..', 'network', 'connection.json');
+const ccpJSON = fs.readFileSync(ccpPath, 'utf8');
+const ccp = JSON.parse(ccpJSON);
 
 // 회원 가입
 userRouter.post('/user', (req, res) => {
-    console.log("진입");
-    const user = {
-        name: req.body.name,
-        email: req.body.email,
-        imgUrl: req.body.imgUrl,
-        birth: req.body.birth,
-        gender: req.body.gender,
-        voted: []
-    }
+    const id = indexGen;
+    const name = req.body.name;         // Nickname
+    const birth = req.body.birth;       // YYYY
+    const gender = req.body.gender;     // 0: Male, 1: Female
+    
     const password = req.body.password;
-    const result = User.register(user, password);
-
-    res.status(200).send(result);
+    
 });
 
 // 로그인

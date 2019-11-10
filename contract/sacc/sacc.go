@@ -95,6 +95,12 @@ func setUser(stub shim.ChaincodeStubInterface, args []string) (string, error) {
 		return "", fmt.Errorf("Incorrect arguments. Please input 4 args.")
 	}
 
+	// 키 중복 검사
+	result, _ := stub.GetState(args[0])
+	if result != nil {
+		return "", fmt.Errorf("This key already exist")
+	}
+
 	var user = User {
 		ObjectType: "User",
 		Id:			args[0],
@@ -231,6 +237,12 @@ func getAllUsers(stub shim.ChaincodeStubInterface) (string, error) {
 func setQuiz(stub shim.ChaincodeStubInterface, args []string) (string, error) {
 	if len(args) != 7 {
 		return "", fmt.Errorf("Incorrect arguments. Please input 8 args.")
+	}
+
+	// 키 중복 검사
+	result, _ := stub.GetState(args[0])
+	if result != nil {
+		return "", fmt.Errorf("This key already exist")
 	}
 
 	// JSON  변환
