@@ -3,12 +3,10 @@ const moment = require('./moment');
 
 class Time {
     // 퀴즈 상태 초기화
-    async initquizStatus() {
+    async initQuizStatus() {
         try {
             // '생성됨' 상태인 퀴즈 조회
-            let result = await quizModel.find({status: 0});
-            console.log(result);
-            // result 어떻게 나오는지 보고 res 형태 결정 
+            let result = await quizModel.findByStatus(0);
             for(let i = 0; i < result.length; i++) {
                 let res = result[i];
                 if(this.isDatePassed(res.begin)) {
@@ -18,7 +16,8 @@ class Time {
                 }
             }
 
-            result = await quizModel.find({status: 1});
+            // '퀴즈 진행 중' 상태인 퀴즈 조회
+            result = await quizModel.findByStatus(1);
             for(let i = 0; i < result.length; i++) {
                 let res = result[i];
                 if(this.isDatePassed(res.end)) {
@@ -27,7 +26,6 @@ class Time {
                     this.registerTimer(res._id, res.end);
                 }
             }
-            // '퀴즈 진행 중' 상태인 퀴즈 조회
         } catch(error) {
             console.log(error);
             return;
