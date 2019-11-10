@@ -87,6 +87,7 @@ class QuizModel {
             try {
                 /* ---------------------------- DATABASE ----------------------------*/
                 const result = await Quiz.find({ status });
+                console.log(result);
                 /* ---------------------------- DATABASE ----------------------------*/
                 resolve(result);
             } catch (err) {

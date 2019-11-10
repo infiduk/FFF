@@ -12,7 +12,7 @@ quizRouter.post('/quiz', async (req, res) => {
         var title = req.body.title;
         var begin = req.body.begin;
         var end = req.body.end;
-        var choice1 = req.body.choice1;
+        var choice1 = req.body.choice1; 
         var choice2 = req.body.choice2;
 
         // DB create

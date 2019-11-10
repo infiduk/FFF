@@ -1,19 +1,7 @@
 const mongoose = require('mongoose');
 const timezone = require('mongoose-timezone');
-const db = require('../db-connection');
-const moment = require('moment'); require('moment-timezone');
-moment.tz.setDefault('Asia/Seoul');
 
-
-db.on('error', (err) => {
-    console.log('Error : ', err);
-});
-
-db.on('open', () => {
-    console.log('Open Event');
-});
-
-const QuizScheme = mongoose.Schema({
+const quizSchema = mongoose.Schema({
     id: mongoose.Schema.Types.ObjectId,
     title: String,
     begin: Date,
@@ -24,6 +12,6 @@ const QuizScheme = mongoose.Schema({
     status: Number
 });
 
-QuizScheme.plugin(timezone, {paths: ['begin', 'end']});
+quizSchema.plugin(timezone, {paths: ['begin', 'end']});
 
-module.exports = mongoose.model('Quiz', QuizScheme);
+module.exports = mongoose.model('Quiz', quizSchema);
