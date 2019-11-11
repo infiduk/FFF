@@ -1,46 +1,89 @@
-const Quiz = require('./schema/quiz');
+const { FileSystemWallet, Gateway } = require('fabric-network');
+const fs = require('fs');
+const path = require('path');
+
+const ccpPath = path.resolve(__dirname, '..', '..', 'network', 'connection.json');
+const ccpJSON = fs.readFileSync(ccpPath, 'utf8');
+const ccp = JSON.parse(ccpJSON);
 
 class QuizModel {
-    create(quizData) {
+    create(quiz) {
         return new Promise(async (resolve, reject) => {
-            var quiz = new Quiz({ ...quizData });
             try {
-                /* ---------------------------- DATABASE ----------------------------*/
-                await quiz.save();
-                /* ---------------------------- DATABASE ----------------------------*/
+                // Create a new file system based wallet for managing identities.
+                const walletPath = path.join(process.cwd(), 'wallet');
+                const wallet = new FileSystemWallet(walletPath);
+                console.log(`Wallet path: ${walletPath}`);
 
-                /* ----------------------------- LEDGER -----------------------------*/
-                // HF connect (Wallet -> Chaincode -> Network)
-                const hf = await require('../model/hf-connection');
-                
-                // Submit
-                await hf.contract.submitTransaction('setQuiz', quiz._id.toString(), quiz.title, quiz.begin.toString(), quiz.end.toString(), quiz.choice1, quiz.choice2);
+                // Check to see if we've already enrolled the user.
+                const userExists = await wallet.exists(quiz.user);
+                if (!userExists) {
+                    console.log('An identity for the user "user1" does not exist in the wallet');
+                    console.log('Run the registerUser.js application before retrying');
+                    return;
+                }
+
+                // Create a new gateway for connecting to our peer node.
+                const gateway = new Gateway();
+                await gateway.connect(ccp, { wallet, identity: quiz.user, discovery: { enabled: false } });
+
+                // Get the network (channel) our contract is deployed to.
+                const network = await gateway.getNetwork('mychannel');
+
+                // Get the contract from the network.
+                const contract = network.getContract('sacc');
+
+                // Submit the specified transaction.
+                await contract.submitTransaction(
+                    'setQuiz', 
+                    quiz.id.toString(), 
+                    quiz.category.toString(), 
+                    quiz.title.toString(), 
+                    quiz.begin.toString(), 
+                    quiz.end.toString(), 
+                    quiz.choice1.toString(), 
+                    quiz.choice2.toString()
+                );
                 console.log('Transaction has been submitted');
 
                 // Disconnect from the gateway.
-                // await hf.gateway.disconnect();
-                /* ----------------------------- LEDGER -----------------------------*/
-                resolve(quiz._id);
+                await gateway.disconnect();
+                resolve("The quiz has been successfully registered.")
             } catch (err) {
                 reject(err);
             }
         });
     }
 
-    findAllFromLedger() {
+    getAllQuizzes(user) {
         return new Promise(async (resolve, reject) => {
             try {
-                /* ----------------------------- LEDGER -----------------------------*/
-                // HF connect (Wallet -> Chaincode -> Network)
-                const hf = await require('../model/hf-connection');
-                
+                // Create a new file system based wallet for managing identities.
+                const walletPath = path.join(process.cwd(), 'wallet');
+                const wallet = new FileSystemWallet(walletPath);
+                console.log(`Wallet path: ${walletPath}`);
+
+                // Check to see if we've already enrolled the user.
+                const userExists = await wallet.exists(user);
+                if (!userExists) {
+                    console.log('An identity for the user does not exist in the wallet');
+                    console.log('Run the registerUser.js application before retrying');
+                    return;
+                }
+
+                // Create a new gateway for connecting to our peer node.
+                const gateway = new Gateway();
+                await gateway.connect(ccp, { wallet, identity: user, discovery: { enabled: false } });
+
+                // Get the network (channel) our contract is deployed to.
+                const network = await gateway.getNetwork('mychannel');
+
+                // Get the contract from the network.
+                const contract = network.getContract('sacc');
+
                 // Evaluate the specified transaction.
-                const result = await hf.contract.evaluateTransaction('getAllQuizzes');
-                // Disconnect from the gateway.
-                
-                // await hf.gateway.disconnect();
+                const result = await contract.evaluateTransaction('getAllQuizzes');
                 console.log(`Transaction has been evaluated, result is: ${result.toString()}`);
-                /* ----------------------------- LEDGER -----------------------------*/
                 resolve(result);
             } catch (err) {
                 reject(err);
@@ -51,9 +94,6 @@ class QuizModel {
     findAll() {
         return new Promise(async (resolve, reject) => {
             try {
-                /* ---------------------------- DATABASE ----------------------------*/
-                const result = await Quiz.find({});
-                /* ---------------------------- DATABASE ----------------------------*/
                 resolve(result);
             } catch (err) {
                 reject(err);
@@ -82,20 +122,6 @@ class QuizModel {
         });
     }
 
-    findByStatus(status) {
-        return new Promise(async (resolve, reject) => {
-            try {
-                /* ---------------------------- DATABASE ----------------------------*/
-                const result = await Quiz.find({ status });
-                console.log(result);
-                /* ---------------------------- DATABASE ----------------------------*/
-                resolve(result);
-            } catch (err) {
-                reject(err);
-            }
-        });
-    }
-
     updateStatus(_id) {
         return new Promise(async (resolve, reject) => {
             try {
@@ -110,21 +136,7 @@ class QuizModel {
                 // Disconnect from the gateway.
                 // await hf.gateway.disconnect();
                 /* ----------------------------- LEDGER -----------------------------*/
-
-                /* ---------------------------- DATABASE ----------------------------*/
-                const doc = await Quiz.findOne({ _id });
-                if( ! doc ) {
-                    console.log('Cannot find document.');
-                    return;
-                }
-                if(doc.status < 2) doc.status ++;
-
-                doc.result = quizResult;
-
-                const result = await doc.save();
-                console.log('Update status success :', result);
-                /* ---------------------------- DATABASE ----------------------------*/
-                resolve(result);
+                resolve(quizResult);
             } catch (err) {
                 reject(err);
             }

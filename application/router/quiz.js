@@ -1,23 +1,29 @@
-// Database
-const timeModule = require('../modules/time');
-const quizModel = require('../model/quiz');
-
 // Express
 const express = require('express');
 const quizRouter = express.Router();
 
+const indexGen = require('../modules/indexGen')
+const quizModel = require('../model/quiz');
+const timeModule = require('../modules/time');
+
+// 퀴즈 등록
 quizRouter.post('/quiz', async (req, res) => {
     try {
         // Request body parsing
-        var title = req.body.title;
-        var begin = req.body.begin;
-        var end = req.body.end;
-        var choice1 = req.body.choice1; 
-        var choice2 = req.body.choice2;
+        const begin = req.body.begin;
+        const end = req.body.end;
 
         // DB create
-        var quizData = { title, begin, end, choice1, choice2, result: "", status: 0 }
-        var id = await quizModel.create(quizData);
+        const quiz = { 
+            id: await indexGen, 
+            category: req.body.category, 
+            title: req.body.title, 
+            begin, 
+            end,
+            choice1: req.body.choice1, 
+            choice2: req.body.choice2,
+            user: req.session.user
+        }
 
         // Set timer
         timeModule.registerTimer(id, begin);

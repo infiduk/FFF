@@ -1,28 +1,38 @@
+// Express
 const express = require('express');
 const userRouter = express.Router();
+const crypto = require('crypto');
 
 const indexGen = require('../modules/indexGen')
-
-const { FileSystemWallet, Gateway, X509WalletMixin } = require('fabric-network');
-const fs = require('fs');
-const path = require('path');
-
-const ccpPath = path.resolve(__dirname, '..', 'network', 'connection.json');
-const ccpJSON = fs.readFileSync(ccpPath, 'utf8');
-const ccp = JSON.parse(ccpJSON);
+const userModel = require('../model/user');
 
 // 회원 가입
-userRouter.post('/user', (req, res) => {
-    const id = indexGen;
-    const name = req.body.name;         // Nickname
-    const birth = req.body.birth;       // YYYY
-    const gender = req.body.gender;     // 0: Male, 1: Female
-    
-    const password = req.body.password;
-    
+userRouter.post('/user', async (req, res) => {
+    try {
+        const name = req.body.name; // Nickname
+        const password = req.body.password;
+
+        const hname = crypto.createHash('sha256').update(name).digest();
+        const hpw = crypto.createHash('sha256').update(password).digest();
+        const key = crypto.createHash('sha256').update(hname + hpw).digest('hex');
+
+        const user = { 
+            id: await indexGen, 
+            name, birth: req.body.birth, 
+            gender: req.body.gender, 
+            key
+        }
+        const result = await userModel.create(user)
+        res.status(200).send(result);
+    } catch (err) {
+        console.error(`Failed to register user : ${error}`);
+        res.status(500).send(err);
+    }
 });
 
 // 로그인
-userRouter.post('/login', handleAuth);
+userRouter.post('/login', (req, res) => {
+
+});
 
 module.exports = userRouter;
