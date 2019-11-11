@@ -1,18 +1,19 @@
+'use strict'; // 엄격 모드, 현대식 코드
+
 const moment = require('./moment');
 const crypto = require('crypto');
 
-const hash = crypto.createHash('sha256')
-
-async function generate() {
-    try {
-        const now = moment().format("x")
-        const random = await crypto.randomBytes(256);
-        hash.update(now + random.toString('hex'));
-        const index = hash.digest('hex')
-        console.log(index);
-    } catch (err) {
-        console.log(err);
-    }
+const generate = () => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            const now = moment().format("x")
+            const random = await crypto.randomBytes(256);
+            const index = crypto.createHash('sha256').update(now + random.toString('hex')).digest('hex')
+            resolve(index);
+        } catch (err) {
+            reject(err);
+        }
+    });
 }
 
 module.exports = generate();

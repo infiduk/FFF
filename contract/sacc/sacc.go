@@ -74,6 +74,8 @@ func (t *SimpleAsset) Invoke(stub shim.ChaincodeStubInterface) peer.Response {
 		result, err = setQuiz(stub, args)
 	} else if fn == "getQuiz" {				// 종료(Status: 2)인 경우에만 Count값 Return 할 것
 		result, err = getQuiz(stub, args) 
+	} else if fn == "getQuizByStatus" {
+		return, err = getQuizByStatus(stub, args)
 	} else if fn == "getAllQuizzes" {		// for test
 		result, err = getAllQuizzes(stub)
 	} else if fn == "changeQuizStatus" {	// 시간 정보에 따라 Status 변경
@@ -274,9 +276,15 @@ func setQuiz(stub shim.ChaincodeStubInterface, args []string) (string, error) {
 		return "", fmt.Errorf("%s", err)
 	}
 
+	statusIdIndexKey, err := stub.CreateCompositeKey("status~id", []string{quiz.Status, quiz.Id})
+	if err != nil {
+		return "", fmt.Error("%s", err)
+	}
+	
 	value := []byte{0x00}
 
 	stub.PutState(quizIdIndexKey, value)
+	stub.PutState(statusIdIndexKey, value)
 
 	return string(quizAsBytes), nil
 }
@@ -303,6 +311,43 @@ func getQuiz(stub shim.ChaincodeStubInterface, args[] string) (string, error) {
 	quizJSONasBytes, _ := json.Marshal(quizToTransfer)
 
 	return string(quizJSONasBytes), nil
+}
+
+func getQuizByStatus(stub shim.ChaincodeStubInterface, args []string) (string, error) {
+	if len(args) != 1 {
+		return "", fmt.Errorf("Incorrect arguments. Please input 1 arg.")
+	}
+	status := args[0]
+	queriedIdByStatusIterator, err := stub.GetStateByPartialCompositeKey("stauts~id", []string{status})
+	if err != nil {
+		return "", fmt.Errorf("%s", err)
+	}
+	defer queriedIdByStatusIterator.Close()
+
+	var result []byte
+	var i int
+	for i = 0; queriedIdByStatusIterator.HasNext(); i++ {
+		res, err := queriedIdByStatusIterator.Next()
+		if err != nil {
+			return "", fmt.Errorf("%s", err)
+		}
+		objectType, compositeKeyParts, err := stub.SplitCompositeKey(res.Key)
+		if err != nil {
+			return "", fmt.Errorf("%s", err)
+		}
+		returnedName := compositeKeyParts[0]
+		returnedKey := compositeKeyParts[1]
+		fmt.Printf("- found a key from index:%s name:%s key:%s\n", objectType, returnedName, returnedKey)
+
+		quizAsBytes, err := stub.GetState(returnedKey)
+		if err != nil {
+			return "", fmt.Errorf("%s", err)
+		}
+
+		result = quizAsBytes
+	}
+
+	return string(result), nil
 }
 
 // For test (Not used)
