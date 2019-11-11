@@ -1,45 +1,57 @@
-// Database
-const timeModule = require('../modules/time');
-const quizModel = require('../model/quiz');
+'use strict';
 
 // Express
 const express = require('express');
 const quizRouter = express.Router();
 
-quizRouter.post('/quiz', async (req, res) => {
+const indexGen = require('../modules/indexGen')
+const quizModel = require('../model/quiz');
+const timeModule = require('../modules/time');
+
+// 퀴즈 등록
+quizRouter.post('/quiz', async (req, res) => { 
     try {
         // Request body parsing
-        var title = req.body.title;
-        var begin = req.body.begin;
-        var end = req.body.end;
-        var choice1 = req.body.choice1; 
-        var choice2 = req.body.choice2;
+        const user = req.session.user.name;
+        const begin = req.body.begin;
+        const end = req.body.end;
+        const quiz = { 
+            id      : await indexGen, 
+            category: req.body.category, 
+            title   : req.body.title, 
+            begin, 
+            end,
+            choice1 : req.body.choice1, 
+            choice2 : req.body.choice2,
+        }
 
-        // DB create
-        var quizData = { title, begin, end, choice1, choice2, result: "", status: 0 }
-        var id = await quizModel.create(quizData);
-
+        const result = await quizModel.create(user, quiz);
+        
         // Set timer
         timeModule.registerTimer(id, begin);
         timeModule.registerTimer(id, end);
 
-        res.status(200).json({response: 'Transaction has been submitted'});
+        const data = { user: req.session.user, msg: result }
+        res.status(200).json({data: data});
 
     } catch (error) {
+        const data = { user: req.session.user, msg: '오류가 발생했습니다.' }
         console.error(`Failed to submit transaction: ${error}`);
-        res.status(400).json(error);
+        res.status(400).json({data: data});
     }
 });
 
 // 목록 조회
 quizRouter.get('/quiz', async (req, res) => {
     try {
-        const result = await quizModel.findAll();
-        console.log(result);
-        res.status(200).json(result);
-    } catch(error) {
-        console.error(`Failed: ${error}`);
-        res.status(400).json(error);
+        const user = req.session.user.name;
+        const result = await quizModel.findAll(user);
+        const data = { user: req.session.user, quizzes: result, msg: '조회 성공' }
+        res.status(200).json({data: data});
+    } catch (error) {
+        const data = { user: req.session.user, msg: '조회 실패' }
+        console.error(`Failed to evaluate transaction: ${error}`);
+        res.status(400).json({data: data});
     }
 });
 
@@ -56,12 +68,8 @@ quizRouter.post('/quizDetail', async (req, res) => {
 
     } catch (error) {
         console.error(`Failed to evaluate transaction: ${error}`);
-        res.status(400).json(`{response: ${error}`);
+        res.status(400).json();
     }
 });
-
-// 상태 변경
-// quizRo
-
 
 module.exports = quizRouter;
