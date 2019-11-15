@@ -82,6 +82,8 @@ func (t *SimpleAsset) Invoke(stub shim.ChaincodeStubInterface) peer.Response {
 		result, err = changeQuizStatus(stub, args)
 	} else if fn == "choice" {				// 선택
 		result, err = choice(stub, args)
+	} else if fn == "getHistoryByQuizId" {
+		result, err = getHistoryByQuizId(stub, args)
 	} else {
 		return shim.Error("Not supported chaincode function.")
 	}
@@ -550,6 +552,11 @@ func choice(stub shim.ChaincodeStubInterface, args[] string) (string, error) {
 
 	return string("Choice succeed!"), nil
 }
+
+func getHistoryByQuizId(stub shim.ChaincodeStubInterface, args[] string) (string, error) {
+	
+}
+
 
 /* --------------------------------------- QUIZ --------------------------------------- */
 
