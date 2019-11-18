@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"strconv" // 문자열 숫자 변환
 	"strings" // 문자열 포함 검사
+	"bytes"
 
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 	"github.com/hyperledger/fabric/protos/peer"
@@ -554,7 +555,59 @@ func choice(stub shim.ChaincodeStubInterface, args[] string) (string, error) {
 }
 
 func getHistoryByQuizId(stub shim.ChaincodeStubInterface, args[] string) (string, error) {
-	
+	if len(args) != 1 {
+		return "", fmt.Errorf("Incorrect number of arguments. Expecting 1 arg")
+	}
+
+	id := args[0]
+
+	historyIterator, err := stub.getHistoryForKey(id)
+	if err != nil {
+		return "", fmt.Errorf("%s", err)
+	}
+	defer historyIterator.Close()
+
+	var buffer bytes.Buffer
+	buffer.WriteString("[")
+
+	comma := false
+	for historyIterator.HasNext() {
+		response, err := historyIterator.Next()
+		if err != nil {
+			return "", fmt.Errorf("%s", err)
+		}
+		if comma == true {
+			buffer.WriteString(", ")
+		}
+		buffer.WriteString("{\"TxId\":")
+		buffer.WriteString("\"")
+		buffer.WriteString(response.TxId)
+		buffer.WriteString("\"")
+
+		buffer.WriteString(", \"Value\":")
+
+		if response.IsDelete {
+			buffer.WriteString("null")
+		} else {
+			buffer.WriteString(string(response.Value))
+		}
+
+		buffer.WriteString(", \"Timestamp\":")
+		buffer.WriteString("\"")
+		buffer.WriteString(time.Unix(response.Timestamp.Seconds, int64(response.Timestamp.Nanos)).String())
+		buffer.WriteString("\"")
+
+		buffer.WriteString(", \"IsDelete\":")
+		buffer.WriteString("\"")
+		buffer.WriteString(strconv.FormatBool(response.IsDelete))
+		buffer.WriteString("\"")
+
+		buffer.WriteString("}")
+		comma = true
+	}
+	buffer.WriteString("]")
+
+	return buffer.String(), nil
 }
 
 

@@ -24,7 +24,7 @@ userRouter.post('/user', async (req, res) => {
             birth: req.body.birth, 
             gender: req.body.gender
         }
-        const result = await userModel.create(user, key)
+        const result = await userModel.setUser(user, key)
         res.status(200).send(result);
     } catch (error) {
         console.error(`Failed to register user : ${error}`);
@@ -42,7 +42,7 @@ userRouter.post('/login', (req, res) => {
         const hpw = crypto.createHash('sha256').update(password).digest();
         const key = crypto.createHash('sha256').update(hname + hpw).digest('hex');
 
-        const result = await userModel.findone(key, name);
+        const result = await userModel.getUserByName(key, name);
         if (!result) {
             res.status(200).send("로그인 실패");
         } else {
@@ -52,7 +52,8 @@ userRouter.post('/login', (req, res) => {
                 gender: result.Gender,
                 token: result.Token,
                 quizzes: result.Quizzes,
-                choices: result.Choices
+                choices: result.Choices,
+                hpw
             }
             const data = { user: req.session.user }
             res.status(200).send({msg: "로그인 성공", data: data });
@@ -63,7 +64,7 @@ userRouter.post('/login', (req, res) => {
     }
 });
 
-// 회원 목록 조회 (나중에)
+// 회원 목록 조회 (관리자 추가하면)
 
 
 module.exports = userRouter;
