@@ -12,8 +12,8 @@ const timeModule = require('../modules/time');
 quizRouter.post('/quiz', async (req, res) => { 
     try {
         // Request body parsing
-        const user = req.session.user.name;
-        const hname = crypto.createHash('sha256').update(name).digest();
+        const user = req.session.user;
+        const hname = crypto.createHash('sha256').update(user.name).digest();
         const key = crypto.createHash('sha256').update(hname + user.hpw).digest('hex');
 
         const begin = req.body.begin;
@@ -47,8 +47,8 @@ quizRouter.post('/quiz', async (req, res) => {
 // 목록 조회
 quizRouter.get('/quiz', async (req, res) => {
     try {
-        const user = req.session.user.name;
-        const hname = crypto.createHash('sha256').update(name).digest();
+        const user = req.session.user;
+        const hname = crypto.createHash('sha256').update(user.name).digest();
         const key = crypto.createHash('sha256').update(hname + user.hpw).digest('hex');
         
         const result = await quizModel.getAllQuizzes(key);
@@ -64,8 +64,8 @@ quizRouter.get('/quiz', async (req, res) => {
 // 상세 조회
 quizRouter.post('/quiz/detail', async (req, res) => {
     try {
-        const user = req.session.user.name;
-        const hname = crypto.createHash('sha256').update(name).digest();
+        const user = req.session.user;
+        const hname = crypto.createHash('sha256').update(user.name).digest();
         const key = crypto.createHash('sha256').update(hname + user.hpw).digest('hex');
         const id = req.body.id;
 
@@ -85,7 +85,7 @@ quizRouter.post('/quiz/detail', async (req, res) => {
 quizRouter.post('/quiz/choose', async (req, res) => {
     try {
         const user = req.session.user;
-        const hname = crypto.createHash('sha256').update(name).digest();
+        const hname = crypto.createHash('sha256').update(user.name).digest();
         const key = crypto.createHash('sha256').update(hname + user.hpw).digest('hex');
         const quiz = {
             id: req.body.id,
@@ -110,7 +110,7 @@ quizRouter.post('/quiz/choose', async (req, res) => {
 quizRouter.post('/quiz/history', async (req, res) => {
     try {
         const user = req.session.user;
-        const hname = crypto.createHash('sha256').update(name).digest();
+        const hname = crypto.createHash('sha256').update(user.name).digest();
         const key = crypto.createHash('sha256').update(hname + user.hpw).digest('hex');
         const id = req.body.id; // quiz id
 

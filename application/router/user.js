@@ -33,7 +33,7 @@ userRouter.post('/user', async (req, res) => {
 });
 
 // 로그인
-userRouter.post('/login', (req, res) => {
+userRouter.post('/login', async (req, res) => {
     try {
         const name = req.body.name; // Nickname
         const password = req.body.password;

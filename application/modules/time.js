@@ -7,8 +7,10 @@ class Time {
         try {
             // '생성됨' 상태인 퀴즈 조회
             let result = await quizModel.getQuizByStatus("0");
-            for(let i = 0; i < result.length; i++) {
-                let res = JSON.parse(result[i]);
+            let obj = JSON.parse(result);
+            for(let i = 0; i < obj.length; i++) {
+                let res = obj[i];
+                console.log("0: " + JSON.stringify(res));
                 if(this.isDatePassed(res.begin)) {
                     await quizModel.changeQuizStatus(res.id);
                 } else {
@@ -18,10 +20,12 @@ class Time {
 
             // '퀴즈 진행 중' 상태인 퀴즈 조회
             result = await quizModel.getQuizByStatus("1");
-            for(let i = 0; i < result.length; i++) {
-                let res = JSON.parse(result[i]);
+            obj = JSON.parse(result);
+            for(let i = 0; i < obj.length; i++) {
+                let res = obj[i];
+                console.log("1: " + JSON.stringify(res));
                 if(this.isDatePassed(res.end)) {
-                    await quizModel.updateStatus(res.id);
+                    await quizModel.changeQuizStatus(res.id);
                 } else {
                     this.registerTimer(res.id, res.end);
                 }
@@ -38,9 +42,9 @@ class Time {
     }
 
     // 타이머 등록
-    registerTimer(quizId, referenceDate) {
+    registerTimer(id, referenceDate) {
         setTimeout(async () => { // 완료시간 경과 안됐으면 상태 변경 타이머 작동
-            await quizModel.updateStatus(quizId);
+            await quizModel.changeQuizStatus(id);
         }, moment(referenceDate).diff(moment()));
     }
 }

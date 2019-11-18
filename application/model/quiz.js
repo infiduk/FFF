@@ -5,6 +5,7 @@ const fs = require('fs');
 const path = require('path');
 
 const ccpPath = path.resolve(__dirname, '..', '..', 'network', 'connection.json');
+console.log("ccpPath: " + ccpPath);
 const ccpJSON = fs.readFileSync(ccpPath, 'utf8');
 const ccp = JSON.parse(ccpJSON);
 
@@ -105,10 +106,10 @@ class QuizModel {
                 console.log(`Wallet path: ${walletPath}`);
 
                 // Check to see if we've already enrolled the user.
-                const userExists = await wallet.exists('admin');
-                if (!userExists) {
-                    console.log('An identity for the user admin does not exist in the wallet');
-                    console.log('Run the registerUser.js application before retrying');
+                const adminExists = await wallet.exists('admin');
+                if (!adminExists) {
+                    console.log('An identity for the admin user "admin" does not exist in the wallet');
+                    console.log('Run the enrollAdmin.js application before retrying');
                     return;
                 }
 
@@ -123,7 +124,7 @@ class QuizModel {
                 const contract = network.getContract('sacc');
 
                 // Submit the specified transaction.
-                const result = await contract.submitTransaction('changeQuizStatus', status.toString());
+                const result = await contract.submitTransaction('getQuizByStatus', status.toString());
                 console.log('Transaction has been submitted');
 
                 // Disconnect from the gateway.
@@ -219,10 +220,10 @@ class QuizModel {
                 console.log(`Wallet path: ${walletPath}`);
 
                 // Check to see if we've already enrolled the user.
-                const userExists = await wallet.exists('admin');
-                if (!userExists) {
-                    console.log('An identity for the user admin does not exist in the wallet');
-                    console.log('Run the registerUser.js application before retrying');
+                const adminExists = await wallet.exists('admin');
+                if (!adminExists) {
+                    console.log('An identity for the admin user "admin" does not exist in the wallet');
+                    console.log('Run the enrollAdmin.js application before retrying');
                     return;
                 }
 
@@ -255,7 +256,7 @@ class QuizModel {
         return new Promise(async (resolve, reject) => {
             try {
                 // Create a new file system based wallet for managing identities.
-                const walletPath = path.join(process.cwd(), 'wallet');
+                const walletPath = path.join(process.cwd(), '..', 'wallet');
                 const wallet = new FileSystemWallet(walletPath);
                 console.log(`Wallet path: ${walletPath}`);
 
@@ -299,7 +300,7 @@ class QuizModel {
         return new Promise(async (resolve, reject) => {
             try {
                 // Create a new file system based wallet for managing identities.
-                const walletPath = path.join(process.cwd(), 'wallet');
+                const walletPath = path.join(process.cwd(), '..', 'wallet');
                 const wallet = new FileSystemWallet(walletPath);
                 console.log(`Wallet path: ${walletPath}`);
 
