@@ -9,7 +9,7 @@ const ccpJSON = fs.readFileSync(ccpPath, 'utf8');
 const ccp = JSON.parse(ccpJSON);
 
 class User {
-    create(key, user) {
+    setUser(key, user) {
         return new Promise(async (resolve, reject) => {
             try {
                 // Create a new file system based wallet for managing identities.
@@ -53,6 +53,13 @@ class User {
                 // Get the contract from the network.
                 const contract = network.getContract('sacc');
 
+                const userNameExists = await contract.evaluateTransaction('getUserByName', user.name.toString());
+                if (userNameExists) {
+                    console.log(`An identity for the user name '${user.name}' already exists in the wallet`);
+                    await gateway.disconnect();
+                    return;
+                }
+
                 // Submit the specified transaction.
                 await contract.submitTransaction('setUser', user.id.toString(), user.name.toString(), user.birth.toString(), user.gender.toString());
                 console.log('Transaction has been submitted');
@@ -66,7 +73,7 @@ class User {
         });
     }
 
-    findOne(key, name) {
+    getUserByName(key, name) {
         return new Promise(async (resolve, reject) => {
             try {
                 // Create a new file system based wallet for managing identities.

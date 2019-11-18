@@ -58,6 +58,15 @@ sleep 2
 docker exec cli peer chaincode query -n sacc -C mychannel -c '{"Args": ["getQuiz", "724f0e7da790374cec1b52c82db372b340949be200820100e584eff369dbda9f"]}'
 sleep 2
 
+# getQuiz
+echo '□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□ Quiz 상태로 조회 테스트(상태 변경 전) □□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□'
+docker exec cli peer chaincode query -n sacc -C mychannel -c '{"Args": ["getQuizByStatus", "0"]}'
+sleep 2
+docker exec cli peer chaincode query -n sacc -C mychannel -c '{"Args": ["getQuizByStatus", "1"]}'
+sleep 2
+docker exec cli peer chaincode query -n sacc -C mychannel -c '{"Args": ["getQuizByStatus", "2"]}'
+sleep 2
+
 # getAllQuizzes
 echo '□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□ Quiz 전체 조회 테스트 □□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□'
 docker exec cli peer chaincode query -n sacc -C mychannel -c '{"Args": ["getAllQuizzes"]}'
@@ -81,6 +90,16 @@ sleep 2
 docker exec cli peer chaincode invoke -n sacc -C mychannel -c '{"Args":["changeQuizStatus", "724f0e7da790374cec1b52c82db372b340949be200820100e584eff369dbda9f"]}'
 sleep 2
 
+# getQuiz
+echo '□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□ Quiz 상태로 조회 테스트(상태 변경 후) □□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□'
+docker exec cli peer chaincode query -n sacc -C mychannel -c '{"Args": ["getQuizByStatus", "0"]}'
+sleep 2
+docker exec cli peer chaincode query -n sacc -C mychannel -c '{"Args": ["getQuizByStatus", "1"]}'
+sleep 2
+docker exec cli peer chaincode query -n sacc -C mychannel -c '{"Args": ["getQuizByStatus", "2"]}'
+sleep 2
+
+
 # choice
 echo '□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□ 투표 테스트 □□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□'
 docker exec cli peer chaincode invoke -n sacc -C mychannel -c '{"Args":["choice", "2d7b42d089129b234caa94c728406cc548dd5593c8a6fc55ee86a3e62f5b819c", "0", "홍길동"]}'
@@ -101,6 +120,15 @@ docker exec cli peer chaincode invoke -n sacc -C mychannel -c '{"Args":["changeQ
 sleep 2
 docker exec cli peer chaincode invoke -n sacc -C mychannel -c '{"Args":["choice", "724f0e7da790374cec1b52c82db372b340949be200820100e584eff369dbda9f", "1", "홍길동"]}'
 sleep 2
+
+# getQuiz
+echo '□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□ Quiz 이력 조회 테스트 □□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□'
+docker exec cli peer chaincode query -n sacc -C mychannel -c '{"Args": ["getHistoryByQuizId", "2d7b42d089129b234caa94c728406cc548dd5593c8a6fc55ee86a3e62f5b819c"]}'
+sleep 2
+docker exec cli peer chaincode query -n sacc -C mychannel -c '{"Args": ["getHistoryByQuizId", "724f0e7da790374cec1b52c82db372b340949be200820100e584eff369dbda9f"]}'
+sleep 2
+
+echo '========================================================================================================================================================='
 
 # getAllQuizzes
 echo '□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□ 결과 - 유저 □□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□'
