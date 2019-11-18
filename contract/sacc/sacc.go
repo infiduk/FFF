@@ -429,8 +429,24 @@ func changeQuizStatus(stub shim.ChaincodeStubInterface, args []string) (string, 
 	if err != nil {
 		return "", fmt.Errorf("%s", err)
 	}
+
+	indexName := "status~id"
+	blank := "\u0000"
+	oldStatusIdIndexKey := blank + indexName + blank + quizToTransfer.Status + blank + quizToTransfer.Id + blank
+	err = stub.DelState(oldStatusIdIndexKey)
+	if err != nil {
+		return "", fmt.Errorf("%s", err)
+	}
+
 	status += 1
 	quizToTransfer.Status = strconv.Itoa(status)
+
+	newStatusIdIndexKey, err := stub.CreateCompositeKey(indexName, []string{quizToTransfer.Status, quizToTransfer.Id})
+	if err != nil {
+		return "", fmt.Errorf("Incorrect arguments. Expecting a key and a value")
+	}
+	value := []byte{0x00}
+	stub.PutState(newStatusIdIndexKey, value);
 
 	if quizToTransfer.Status == "2" {
 		count1, err := strconv.Atoi(quizToTransfer.Count1)
