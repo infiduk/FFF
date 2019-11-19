@@ -69,7 +69,7 @@ app.get('/', async function (req, res) {
     res.status(200).json(obj);
 });
 
-// 3.4 GET /quiz/:id - 조회
+// 3.4 GET /vote/:id - 조회
 
 // 3.5 PUT /key/:id - 수정
 

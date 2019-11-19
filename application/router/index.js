@@ -1,9 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const userRouter = require('./user');   // userRouter
-const quizRouter = require('./quiz');    // quizRouter
+const voteRouter = require('./vote');    // voteRouter
 
 router.use(userRouter);
-router.use(quizRouter);
+router.use(voteRouter);
 
 module.exports = router;
