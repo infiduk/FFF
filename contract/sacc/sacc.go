@@ -11,6 +11,8 @@ import (
 	"fmt"
 	"strconv" // 문자열 숫자 변환
 	"strings" // 문자열 포함 검사
+	"bytes"
+	"time"	  // Timestamp
 
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 	"github.com/hyperledger/fabric/protos/peer"
@@ -75,7 +77,7 @@ func (t *SimpleAsset) Invoke(stub shim.ChaincodeStubInterface) peer.Response {
 	} else if fn == "getQuiz" {				// 종료(Status: 2)인 경우에만 Count값 Return 할 것
 		result, err = getQuiz(stub, args) 
 	} else if fn == "getQuizByStatus" {
-		return, err = getQuizByStatus(stub, args)
+		result, err = getQuizByStatus(stub, args)
 	} else if fn == "getAllQuizzes" {		// for test
 		result, err = getAllQuizzes(stub)
 	} else if fn == "changeQuizStatus" {	// 시간 정보에 따라 Status 변경
@@ -280,7 +282,7 @@ func setQuiz(stub shim.ChaincodeStubInterface, args []string) (string, error) {
 
 	statusIdIndexKey, err := stub.CreateCompositeKey("status~id", []string{quiz.Status, quiz.Id})
 	if err != nil {
-		return "", fmt.Error("%s", err)
+		return "", fmt.Errorf("%s", err)
 	}
 	
 	value := []byte{0x00}
@@ -320,36 +322,46 @@ func getQuizByStatus(stub shim.ChaincodeStubInterface, args []string) (string, e
 		return "", fmt.Errorf("Incorrect arguments. Please input 1 arg.")
 	}
 	status := args[0]
-	queriedIdByStatusIterator, err := stub.GetStateByPartialCompositeKey("stauts~id", []string{status})
+	queriedIdByStatusIterator, err := stub.GetStateByPartialCompositeKey("status~id", []string{status})
 	if err != nil {
 		return "", fmt.Errorf("%s", err)
 	}
 	defer queriedIdByStatusIterator.Close()
 
-	var result []byte
+	var buffer string
+	buffer = "["
+	comma := false
+	
 	var i int
 	for i = 0; queriedIdByStatusIterator.HasNext(); i++ {
 		res, err := queriedIdByStatusIterator.Next()
 		if err != nil {
 			return "", fmt.Errorf("%s", err)
 		}
+
 		objectType, compositeKeyParts, err := stub.SplitCompositeKey(res.Key)
 		if err != nil {
 			return "", fmt.Errorf("%s", err)
 		}
+
 		returnedName := compositeKeyParts[0]
 		returnedKey := compositeKeyParts[1]
 		fmt.Printf("- found a key from index:%s name:%s key:%s\n", objectType, returnedName, returnedKey)
+		if comma == true {
+			buffer += ", "
+		}
 
-		quizAsBytes, err := stub.GetState(returnedKey)
+		result, err := getQuiz(stub, []string{returnedKey})
 		if err != nil {
 			return "", fmt.Errorf("%s", err)
 		}
 
-		result = quizAsBytes
+		buffer += result
+		comma = true
 	}
+	buffer += "]"
 
-	return string(result), nil
+	return string(buffer), nil
 }
 
 // For test (Not used)
@@ -417,8 +429,24 @@ func changeQuizStatus(stub shim.ChaincodeStubInterface, args []string) (string, 
 	if err != nil {
 		return "", fmt.Errorf("%s", err)
 	}
+
+	indexName := "status~id"
+	blank := "\u0000"
+	oldStatusIdIndexKey := blank + indexName + blank + quizToTransfer.Status + blank + quizToTransfer.Id + blank
+	err = stub.DelState(oldStatusIdIndexKey)
+	if err != nil {
+		return "", fmt.Errorf("%s", err)
+	}
+
 	status += 1
 	quizToTransfer.Status = strconv.Itoa(status)
+
+	newStatusIdIndexKey, err := stub.CreateCompositeKey(indexName, []string{quizToTransfer.Status, quizToTransfer.Id})
+	if err != nil {
+		return "", fmt.Errorf("Incorrect arguments. Expecting a key and a value")
+	}
+	value := []byte{0x00}
+	stub.PutState(newStatusIdIndexKey, value);
 
 	if quizToTransfer.Status == "2" {
 		count1, err := strconv.Atoi(quizToTransfer.Count1)
@@ -554,7 +582,59 @@ func choice(stub shim.ChaincodeStubInterface, args[] string) (string, error) {
 }
 
 func getHistoryByQuizId(stub shim.ChaincodeStubInterface, args[] string) (string, error) {
-	
+	if len(args) != 1 {
+		return "", fmt.Errorf("Incorrect number of arguments. Expecting 1 arg")
+	}
+
+	id := args[0]
+
+	historyIterator, err := stub.GetHistoryForKey(id)
+	if err != nil {
+		return "", fmt.Errorf("%s", err)
+	}
+	defer historyIterator.Close()
+
+	var buffer bytes.Buffer
+	buffer.WriteString("[")
+
+	comma := false
+	for historyIterator.HasNext() {
+		response, err := historyIterator.Next()
+		if err != nil {
+			return "", fmt.Errorf("%s", err)
+		}
+		if comma == true {
+			buffer.WriteString(", ")
+		}
+		buffer.WriteString("{\"TxId\":")
+		buffer.WriteString("\"")
+		buffer.WriteString(response.TxId)
+		buffer.WriteString("\"")
+
+		buffer.WriteString(", \"Value\":")
+
+		if response.IsDelete {
+			buffer.WriteString("null")
+		} else {
+			buffer.WriteString(string(response.Value))
+		}
+
+		buffer.WriteString(", \"Timestamp\":")
+		buffer.WriteString("\"")
+		buffer.WriteString(time.Unix(response.Timestamp.Seconds, int64(response.Timestamp.Nanos)).String())
+		buffer.WriteString("\"")
+
+		buffer.WriteString(", \"IsDelete\":")
+		buffer.WriteString("\"")
+		buffer.WriteString(strconv.FormatBool(response.IsDelete))
+		buffer.WriteString("\"")
+
+		buffer.WriteString("}")
+		comma = true
+	}
+	buffer.WriteString("]")
+
+	return buffer.String(), nil
 }
 
 

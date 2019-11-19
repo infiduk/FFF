@@ -9,6 +9,7 @@ const bodyParser = require('body-parser');
 
 // 모듈
 app.use(bodyParser.urlencoded({extended:false}));
+app.use(bodyParser.json());
 app.use(session({
     secret: 'secretK',
     resave: false,
@@ -30,7 +31,12 @@ app.get('/', (req, res)=>{
 // server start
 app.listen(PORT, HOST, async () => {
     try {
-        await timeModule.initQuizStatus();
+        console.log("□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□");
+        console.log("□□□□□□□□□□ SERVER START □□□□□□□□□□");
+        console.log("□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□");
+        console.log("-------- Init Vote Status --------");
+        await timeModule.initVoteStatus();
+        console.log("------ Init Vote Status End ------");
     } catch (err) {
         console.log(err);
     }

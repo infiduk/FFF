@@ -14,17 +14,18 @@ userRouter.post('/user', async (req, res) => {
         const name = req.body.name; // Nickname
         const password = req.body.password;
 
-        const hname = crypto.createHash('sha256').update(name).digest();
-        const hpw = crypto.createHash('sha256').update(password).digest();
+        const hname = crypto.createHash('sha256').update(name).digest('hex');
+        const hpw = crypto.createHash('sha256').update(password).digest('hex');
         const key = crypto.createHash('sha256').update(hname + hpw).digest('hex');
 
         const user = { 
-            id: await indexGen, 
+            id: await indexGen.generate(), 
             name,
             birth: req.body.birth, 
             gender: req.body.gender
         }
-        const result = await userModel.create(user, key)
+        console.log(`USERID: ${user.id}`);
+        const result = await userModel.setUser(key, user);
         res.status(200).send(result);
     } catch (error) {
         console.error(`Failed to register user : ${error}`);
@@ -33,26 +34,29 @@ userRouter.post('/user', async (req, res) => {
 });
 
 // 로그인
-userRouter.post('/login', (req, res) => {
+userRouter.post('/login', async (req, res) => {
     try {
         const name = req.body.name; // Nickname
         const password = req.body.password;
 
-        const hname = crypto.createHash('sha256').update(name).digest();
-        const hpw = crypto.createHash('sha256').update(password).digest();
+        const hname = crypto.createHash('sha256').update(name).digest('hex');
+        const hpw = crypto.createHash('sha256').update(password).digest('hex');
         const key = crypto.createHash('sha256').update(hname + hpw).digest('hex');
 
-        const result = await userModel.findone(key, name);
-        if (!result) {
+        const result = await userModel.getUserByName(key, name);
+        const obj = JSON.parse(result);
+        console.log("obj: " + JSON.stringify(obj));
+        if (!obj) {
             res.status(200).send("로그인 실패");
         } else {
             req.session.user = {
-                name: result.Name,
-                birth: result.Birth,
-                gender: result.Gender,
-                token: result.Token,
-                quizzes: result.Quizzes,
-                choices: result.Choices
+                name: obj.name,
+                birth: obj.birth,
+                gender: obj.gender,
+                token: obj.token,
+                votes: obj.votes,
+                choices: obj.choices,
+                hpw
             }
             const data = { user: req.session.user }
             res.status(200).send({msg: "로그인 성공", data: data });
@@ -63,7 +67,7 @@ userRouter.post('/login', (req, res) => {
     }
 });
 
-// 회원 목록 조회 (나중에)
+// 회원 목록 조회 (관리자 추가하면)
 
 
 module.exports = userRouter;
