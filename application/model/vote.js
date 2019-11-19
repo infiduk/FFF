@@ -9,9 +9,9 @@ console.log("ccpPath: " + ccpPath);
 const ccpJSON = fs.readFileSync(ccpPath, 'utf8');
 const ccp = JSON.parse(ccpJSON);
 
-class QuizModel {
+class VoteModel {
     // 퀴즈 등록
-    setQuiz(key, quiz) {
+    setVote(key, vote) {
         return new Promise(async (resolve, reject) => {
             try {
                 // Create a new file system based wallet for managing identities.
@@ -24,7 +24,7 @@ class QuizModel {
                 if (!userExists) {
                     console.log('An identity for the user does not exist in the wallet');
                     console.log('Run the registerUser.js application before retrying');
-                    return;
+                    reject('An identity for the user does not exist in the wallet')
                 }
 
                 // Create a new gateway for connecting to our peer node.
@@ -39,20 +39,20 @@ class QuizModel {
 
                 // Submit the specified transaction.
                 await contract.submitTransaction(
-                    'setQuiz', 
-                    quiz.id.toString(), 
-                    quiz.category.toString(), 
-                    quiz.title.toString(), 
-                    quiz.begin.toString(), 
-                    quiz.end.toString(), 
-                    quiz.choice1.toString(), 
-                    quiz.choice2.toString()
+                    'setVote', 
+                    vote.id.toString(), 
+                    vote.category.toString(), 
+                    vote.title.toString(), 
+                    vote.begin.toString(), 
+                    vote.end.toString(), 
+                    vote.choice1.toString(), 
+                    vote.choice2.toString()
                 );
                 console.log('Transaction has been submitted');
 
                 // Disconnect from the gateway.
                 await gateway.disconnect();
-                resolve("The quiz has been successfully registered.")
+                resolve("The vote has been successfully registered.")
             } catch (err) {
                 reject(err);
             }
@@ -60,7 +60,7 @@ class QuizModel {
     }
 
     // 퀴즈 조회
-    getQuiz(key, id) {
+    getVote(key, id) {
         return new Promise(async (resolve, reject) => {
             try {
                 // Create a new file system based wallet for managing identities.
@@ -73,7 +73,7 @@ class QuizModel {
                 if (!userExists) {
                     console.log('An identity for the user does not exist in the wallet');
                     console.log('Run the registerUser.js application before retrying');
-                    return;
+                    reject('An identity for the user does not exist in the wallet');
                 }
 
                 // Create a new gateway for connecting to our peer node.
@@ -87,7 +87,7 @@ class QuizModel {
                 const contract = network.getContract('sacc');
 
                 // Evaluate the specified transaction.
-                const result = await contract.evaluateTransaction('getQuiz', id.toString());
+                const result = await contract.evaluateTransaction('getVote', id.toString());
                 console.log(`Transaction has been evaluated, result is: ${result.toString()}`);
                 resolve(result);
             } catch (err) {
@@ -97,7 +97,7 @@ class QuizModel {
     }
 
     // 퀴즈 상태로 조회 
-    getQuizByStatus(status) {
+    getVoteByStatus(status) {
         return new Promise(async (resolve, reject) => {
             try {
                 // Create a new file system based wallet for managing identities.
@@ -110,7 +110,7 @@ class QuizModel {
                 if (!adminExists) {
                     console.log('An identity for the admin user "admin" does not exist in the wallet');
                     console.log('Run the enrollAdmin.js application before retrying');
-                    return;
+                    reject('An identity for the admin user "admin" does not exist in the wallet')
                 }
 
                 // Create a new gateway for connecting to our peer node.
@@ -124,7 +124,7 @@ class QuizModel {
                 const contract = network.getContract('sacc');
 
                 // Submit the specified transaction.
-                const result = await contract.submitTransaction('getQuizByStatus', status.toString());
+                const result = await contract.submitTransaction('getVoteByStatus', status.toString());
                 console.log('Transaction has been submitted');
 
                 // Disconnect from the gateway.
@@ -137,7 +137,7 @@ class QuizModel {
     }
 
     // 퀴즈 전체조회
-    getAllQuizzes(key) {
+    getAllVotes(key) {
         return new Promise(async (resolve, reject) => {
             try {
                 // Create a new file system based wallet for managing identities.
@@ -150,7 +150,7 @@ class QuizModel {
                 if (!userExists) {
                     console.log('An identity for the user does not exist in the wallet');
                     console.log('Run the registerUser.js application before retrying');
-                    return;
+                    reject('An identity for the user does not exist in the wallet');
                 }
 
                 // Create a new gateway for connecting to our peer node.
@@ -164,7 +164,7 @@ class QuizModel {
                 const contract = network.getContract('sacc');
 
                 // Evaluate the specified transaction.
-                const result = await contract.evaluateTransaction('getAllQuizzes');
+                const result = await contract.evaluateTransaction('getAllVotes');
                 console.log(`Transaction has been evaluated, result is: ${result.toString()}`);
                 resolve(result);
             } catch (err) {
@@ -187,7 +187,7 @@ class QuizModel {
                 if (!userExists) {
                     console.log('An identity for the user does not exist in the wallet');
                     console.log('Run the registerUser.js application before retrying');
-                    return;
+                    reject('An identity for the user does not exist in the wallet');
                 }
 
                 // Create a new gateway for connecting to our peer node.
@@ -211,7 +211,7 @@ class QuizModel {
     }
 
     // 퀴즈 상태 변경
-    changeQuizStatus(id) {
+    changeVoteStatus(id) {
         return new Promise(async (resolve, reject) => {
             try {
                 // Create a new file system based wallet for managing identities.
@@ -224,7 +224,7 @@ class QuizModel {
                 if (!adminExists) {
                     console.log('An identity for the admin user "admin" does not exist in the wallet');
                     console.log('Run the enrollAdmin.js application before retrying');
-                    return;
+                    reject('An identity for the admin user "admin" does not exist in the wallet');
                 }
 
                 // Create a new gateway for connecting to our peer node.
@@ -238,13 +238,13 @@ class QuizModel {
                 const contract = network.getContract('sacc');
 
                 // Submit the specified transaction.
-                await contract.submitTransaction('changeQuizStatus', id.toString());
+                await contract.submitTransaction('changeVoteStatus', id.toString());
                 console.log('Transaction has been submitted');
 
                 // Disconnect from the gateway.
                 await gateway.disconnect();
 
-                resolve(`Quiz ${id} status successfully updated`);
+                resolve(`Vote ${id} status successfully updated`);
             } catch (err) {
                 reject(err);
             }
@@ -252,7 +252,7 @@ class QuizModel {
     }
 
     // 투표
-    choice(key, quiz) {
+    choice(key, vote) {
         return new Promise(async (resolve, reject) => {
             try {
                 // Create a new file system based wallet for managing identities.
@@ -265,7 +265,7 @@ class QuizModel {
                 if (!userExists) {
                     console.log('An identity for the user does not exist in the wallet');
                     console.log('Run the registerUser.js application before retrying');
-                    return;
+                    reject('An identity for the user does not exist in the wallet');
                 }
 
                 // Create a new gateway for connecting to our peer node.
@@ -279,10 +279,10 @@ class QuizModel {
                 const contract = network.getContract('sacc');
 
                 // Submit the specified transaction.
-                await contract.submitTransaction('choice', quiz.id.toString(), quiz.choose.toString(), user.toString());
+                await contract.submitTransaction('choice', vote.id.toString(), vote.choose.toString(), user.toString());
                 console.log('Transaction has been submitted');
 
-                const result = await contract.evaluateTransaction('getQuiz', quiz.id.toString());
+                const result = await contract.evaluateTransaction('getVote', vote.id.toString());
                 console.log('Transaction has been evaluated');
 
                 // Disconnect from the gateway.
@@ -296,7 +296,7 @@ class QuizModel {
     }
 
     // 퀴즈 이력 조회
-    getHistoryByQuizId(key, id) {
+    getHistoryByVoteId(key, id) {
         return new Promise(async (resolve, reject) => {
             try {
                 // Create a new file system based wallet for managing identities.
@@ -309,7 +309,7 @@ class QuizModel {
                 if (!userExists) {
                     console.log('An identity for the user does not exist in the wallet');
                     console.log('Run the registerUser.js application before retrying');
-                    return;
+                    reject('An identity for the user does not exist in the wallet');
                 }
 
                 // Create a new gateway for connecting to our peer node.
@@ -323,7 +323,7 @@ class QuizModel {
                 const contract = network.getContract('sacc');
                 
                 // Evaluate the specified transaction.
-                const result = await contract.evaluateTransaction('getHistoryByQuizId', id.toString());
+                const result = await contract.evaluateTransaction('getHistoryByVoteId', id.toString());
                 console.log(`Transaction has been evaluated, result is: ${result.toString()}`);
                 resolve(result);
             } catch(err) {
@@ -333,4 +333,4 @@ class QuizModel {
     }
 }
 
-module.exports = new QuizModel();
+module.exports = new VoteModel();

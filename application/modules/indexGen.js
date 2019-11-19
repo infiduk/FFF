@@ -3,17 +3,19 @@
 const moment = require('./moment');
 const crypto = require('crypto');
 
-const generate = () => {
-    return new Promise(async (resolve, reject) => {
-        try {
-            const now = moment().format("x")
-            const random = await crypto.randomBytes(256);
-            const index = crypto.createHash('sha256').update(now + random.toString('hex')).digest('hex')
-            resolve(index);
-        } catch (err) {
-            reject(err);
-        }
-    });
+class Generator {
+    generate = () => {
+        return new Promise(async (resolve, reject) => {
+            try {
+                const now = moment().format("x")
+                const random = await crypto.randomBytes(256);
+                const index = crypto.createHash('sha256').update(now + random.toString('hex')).digest('hex')
+                resolve(index);
+            } catch (err) {
+                reject(err);
+            }
+        });
+    }
 }
 
-module.exports = generate();
+module.exports = new Generator();

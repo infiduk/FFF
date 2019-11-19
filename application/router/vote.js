@@ -2,37 +2,38 @@
 
 // Express
 const express = require('express');
-const quizRouter = express.Router();
+const voteRouter = express.Router();
 
 const indexGen = require('../modules/indexGen')
-const quizModel = require('../model/quiz');
+const voteModel = require('../model/vote');
 const timeModule = require('../modules/time');
 
+const crypto = require('crypto');
+
 // 퀴즈 등록
-quizRouter.post('/quiz', async (req, res) => { 
+voteRouter.post('/vote', async (req, res) => { 
+    const user = req.body.user; // For test on Postman
+    // const user = req.session.user; // For service
     try {
         // Request body parsing
-        const user = req.session.user;
-        const hname = crypto.createHash('sha256').update(user.name).digest();
+        const hname = crypto.createHash('sha256').update(user.name).digest('hex');
         const key = crypto.createHash('sha256').update(hname + user.hpw).digest('hex');
 
-        const begin = req.body.begin;
-        const end = req.body.end;
-        const quiz = { 
-            id      : await indexGen, 
+        const vote = { 
+            id      : await indexGen.generate(), 
             category: req.body.category, 
             title   : req.body.title, 
-            begin, 
-            end,
+            begin   : req.body.begin, 
+            end     : req.body.end,
             choice1 : req.body.choice1, 
             choice2 : req.body.choice2,
         }
-
-        const result = await quizModel.setQuiz(key, quiz);
+        console.log(`VOTEID: ${vote.id}`);
+        const result = await voteModel.setVote(key, vote);
         
         // Set timer
-        timeModule.registerTimer(id, begin);
-        timeModule.registerTimer(id, end);
+        timeModule.registerTimer(vote.id, vote.begin);
+        timeModule.registerTimer(vote.id, vote.end);
 
         const data = { user, msg: result }
         res.status(200).json({data: data});
@@ -45,14 +46,16 @@ quizRouter.post('/quiz', async (req, res) => {
 });
 
 // 목록 조회
-quizRouter.get('/quiz', async (req, res) => {
+voteRouter.get('/vote', async (req, res) => {
+    const user = req.body.user; // For test on Postman
+    // const user = req.session.user; // For service
+
     try {
-        const user = req.session.user;
-        const hname = crypto.createHash('sha256').update(user.name).digest();
+        const hname = crypto.createHash('sha256').update(user.name).digest('hex');
         const key = crypto.createHash('sha256').update(hname + user.hpw).digest('hex');
-        
-        const result = await quizModel.getAllQuizzes(key);
-        const data = { user, quizzes: result, msg: '조회 성공' }
+
+        const result = await voteModel.getAllVotes(key);
+        const data = { user, votes: result, msg: '조회 성공' }
         res.status(200).json({data: data});
     } catch (error) {
         const data = { user, msg: '조회 실패' }
@@ -62,14 +65,16 @@ quizRouter.get('/quiz', async (req, res) => {
 });
 
 // 상세 조회
-quizRouter.post('/quiz/detail', async (req, res) => {
+voteRouter.post('/vote/detail', async (req, res) => {
+    const user = req.body.user; // For test on Postman
+    // const user = req.session.user; // For service
+
     try {
-        const user = req.session.user;
-        const hname = crypto.createHash('sha256').update(user.name).digest();
+        const hname = crypto.createHash('sha256').update(user.name).digest('hex');
         const key = crypto.createHash('sha256').update(hname + user.hpw).digest('hex');
         const id = req.body.id;
 
-        const result = await quizModel.getQuiz(key, id);
+        const result = await voteModel.getVote(key, id);
         console.log(result);
 
         const obj = JSON.parse(result);
@@ -82,20 +87,22 @@ quizRouter.post('/quiz/detail', async (req, res) => {
 });
 
 // 투표
-quizRouter.post('/quiz/choose', async (req, res) => {
+voteRouter.post('/vote/choose', async (req, res) => {
+    const user = req.body.user; // For test on Postman
+    // const user = req.session.user; // For service
+
     try {
-        const user = req.session.user;
-        const hname = crypto.createHash('sha256').update(user.name).digest();
+        const hname = crypto.createHash('sha256').update(user.name).digest('hex');
         const key = crypto.createHash('sha256').update(hname + user.hpw).digest('hex');
-        const quiz = {
+        const vote = {
             id: req.body.id,
             choose: req.body.choose
         }
 
-        const result = await quizModel.choice(key, quiz); // user 정보 최신화
+        const result = await voteModel.choice(key, vote); // user 정보 최신화
         // 안되면 JSON.parse
         req.session.user.Token = result.Token;
-        req.session.user.Quizzes = result.Quizzes;
+        req.session.user.Votes = result.Votes;
         req.session.user.Choices = result.Choices;
         const data = { user: req.session.user, msg: '투표 성공' }
         res.status(200).json({data: data});
@@ -107,14 +114,16 @@ quizRouter.post('/quiz/choose', async (req, res) => {
 });
 
 // 퀴즈 내역 조회
-quizRouter.post('/quiz/history', async (req, res) => {
-    try {
-        const user = req.session.user;
-        const hname = crypto.createHash('sha256').update(user.name).digest();
-        const key = crypto.createHash('sha256').update(hname + user.hpw).digest('hex');
-        const id = req.body.id; // quiz id
+voteRouter.post('/vote/history', async (req, res) => {
+    const user = req.body.user; // For test on Postman
+    // const user = req.session.user; // For service
 
-        const result = await quizModel.getHistoryByQuizId(key, id);
+    try {
+        const hname = crypto.createHash('sha256').update(user.name).digest('hex');
+        const key = crypto.createHash('sha256').update(hname + user.hpw).digest('hex');
+        const id = req.body.id; // vote id
+
+        const result = await voteModel.getHistoryByVoteId(key, id);
         const obj = JSON.parse(result);
         res.status(200).json({data: obj, msg: '조회 성공'});
     } catch (error) {
@@ -124,4 +133,4 @@ quizRouter.post('/quiz/history', async (req, res) => {
     }
 });
 
-module.exports = quizRouter;
+module.exports = voteRouter;
