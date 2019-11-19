@@ -256,7 +256,7 @@ class VoteModel {
         return new Promise(async (resolve, reject) => {
             try {
                 // Create a new file system based wallet for managing identities.
-                const walletPath = path.join(process.cwd(), '..', 'wallet');
+                const walletPath = path.join(process.cwd(), 'wallet');
                 const wallet = new FileSystemWallet(walletPath);
                 console.log(`Wallet path: ${walletPath}`);
 
@@ -279,7 +279,7 @@ class VoteModel {
                 const contract = network.getContract('sacc');
 
                 // Submit the specified transaction.
-                await contract.submitTransaction('choice', vote.id.toString(), vote.choose.toString(), user.toString());
+                await contract.submitTransaction('choice', vote.id.toString(), vote.choose.toString(), vote.user.toString());
                 console.log('Transaction has been submitted');
 
                 const result = await contract.evaluateTransaction('getVote', vote.id.toString());
@@ -300,7 +300,7 @@ class VoteModel {
         return new Promise(async (resolve, reject) => {
             try {
                 // Create a new file system based wallet for managing identities.
-                const walletPath = path.join(process.cwd(), '..', 'wallet');
+                const walletPath = path.join(process.cwd(), 'wallet');
                 const wallet = new FileSystemWallet(walletPath);
                 console.log(`Wallet path: ${walletPath}`);
 

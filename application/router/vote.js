@@ -55,7 +55,8 @@ voteRouter.get('/vote', async (req, res) => {
         const key = crypto.createHash('sha256').update(hname + user.hpw).digest('hex');
 
         const result = await voteModel.getAllVotes(key);
-        const data = { user, votes: result, msg: '조회 성공' }
+        const obj = JSON.parse(result);
+        const data = { user, votes: obj, msg: '조회 성공' }
         res.status(200).json({data: data});
     } catch (error) {
         const data = { user, msg: '조회 실패' }
@@ -96,15 +97,25 @@ voteRouter.post('/vote/choose', async (req, res) => {
         const key = crypto.createHash('sha256').update(hname + user.hpw).digest('hex');
         const vote = {
             id: req.body.id,
-            choose: req.body.choose
+            choose: req.body.choose,
+            user: user.name
         }
 
         const result = await voteModel.choice(key, vote); // user 정보 최신화
-        // 안되면 JSON.parse
-        req.session.user.Token = result.Token;
-        req.session.user.Votes = result.Votes;
-        req.session.user.Choices = result.Choices;
-        const data = { user: req.session.user, msg: '투표 성공' }
+        const obj = JSON.parse(result);
+        /* For service */
+        // req.session.user.token = obj.token;
+        // req.session.user.votes = obj.votes;
+        // req.session.user.choices = obj.choices;
+        // const data = { user: req.session.user, msg: '투표 성공' }
+
+        /* For test on Postman */
+        let userToTransfer = user;
+        userToTransfer.token = obj.token;
+        userToTransfer.votes = obj.votes;
+        userToTransfer.choices = obj.choices;
+        const data = { user: userToTransfer, msg: '투표 성공' }
+
         res.status(200).json({data: data});
     } catch (error) {
         const data = { msg: '투표 실패' }

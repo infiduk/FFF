@@ -17,6 +17,9 @@ class Time {
                     this.registerTimer(res.id, res.begin);
                 }
             }
+            
+            // MVCC_READ_CONFLICT
+            // 투표 시작 시간과 종료 시간이 동시에 경과한 새 투표를 등록하는 경우 발생
 
             // '퀴즈 진행 중' 상태인 퀴즈 조회
             result = await voteModel.getVoteByStatus("1");
