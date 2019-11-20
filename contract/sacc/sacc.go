@@ -30,12 +30,12 @@ type User struct {
 	Birth		 string `json:"birth"`	 // 출생 년도
 	Gender		 string `json:"gender"`	 // 성별
 	Token		 string `json:"token"`	 // 투표권
-	Quizzes	 	 string `json:"quizzes"` // 참여한 투표 id
+	Votes	 	 string `json:"votes"` // 참여한 투표 id
 	Choices		 string `json:"choices"` // 선택 항목
 }
 
 // 퀴즈 클래스 (World State에 담기는 정보)
-type Quiz struct {
+type Vote struct {
 	ObjectType	 string `json:"docType"` // CouchDB의 인덱스 기능을 쓰기위한 파라미터, 이 오브젝트 타입에 만든 구조체 이름을 넣으면 인덱스를 찾을 수 있음
 	Id			 string `json:"id"` 	 // 퀴즈 식별값
 	Category	 string `json:"category"`// 퀴즈 종류 0: 무료 / 1: 유료
@@ -72,20 +72,20 @@ func (t *SimpleAsset) Invoke(stub shim.ChaincodeStubInterface) peer.Response {
 		result, err = getUserByName(stub, args)
 	} else if fn == "getAllUsers" {
 		result, err = getAllUsers(stub)
-	} else if fn == "setQuiz" {				// Quiz 생성
-		result, err = setQuiz(stub, args)
-	} else if fn == "getQuiz" {				// 종료(Status: 2)인 경우에만 Count값 Return 할 것
-		result, err = getQuiz(stub, args) 
-	} else if fn == "getQuizByStatus" {
-		result, err = getQuizByStatus(stub, args)
-	} else if fn == "getAllQuizzes" {		// for test
-		result, err = getAllQuizzes(stub)
-	} else if fn == "changeQuizStatus" {	// 시간 정보에 따라 Status 변경
-		result, err = changeQuizStatus(stub, args)
+	} else if fn == "setVote" {				// Vote 생성
+		result, err = setVote(stub, args)
+	} else if fn == "getVote" {				// 종료(Status: 2)인 경우에만 Count값 Return 할 것
+		result, err = getVote(stub, args) 
+	} else if fn == "getVoteByStatus" {
+		result, err = getVoteByStatus(stub, args)
+	} else if fn == "getAllVotes" {		// for test
+		result, err = getAllVotes(stub)
+	} else if fn == "changeVoteStatus" {	// 시간 정보에 따라 Status 변경
+		result, err = changeVoteStatus(stub, args)
 	} else if fn == "choice" {				// 선택
 		result, err = choice(stub, args)
-	} else if fn == "getHistoryByQuizId" {
-		result, err = getHistoryByQuizId(stub, args)
+	} else if fn == "getHistoryByVoteId" {
+		result, err = getHistoryByVoteId(stub, args)
 	} else {
 		return shim.Error("Not supported chaincode function.")
 	}
@@ -101,10 +101,16 @@ func setUser(stub shim.ChaincodeStubInterface, args []string) (string, error) {
 		return "", fmt.Errorf("Incorrect arguments. Please input 4 args.")
 	}
 
+	// 아이디 중복 검사
+	getUserByNameResult, _ := getUserByName(stub, []string{args[1]})
+	if getUserByNameResult != "" {
+		return "", fmt.Errorf("This name already exist.")
+	}
+
 	// 키 중복 검사
-	result, _ := stub.GetState(args[0])
-	if result != nil {
-		return "", fmt.Errorf("This key already exist")
+	getUserResult, _ := stub.GetState(args[0])
+	if getUserResult != nil {
+		return "", fmt.Errorf("This user already exist.")
 	}
 
 	var user = User {
@@ -114,7 +120,7 @@ func setUser(stub shim.ChaincodeStubInterface, args []string) (string, error) {
 		Birth:		args[2],
 		Gender:		args[3],
 		Token:		"10",
-		Quizzes:	"",
+		Votes:	"",
 		Choices:	"",
 	}
 
@@ -240,7 +246,7 @@ func getAllUsers(stub shim.ChaincodeStubInterface) (string, error) {
 
 
 /* --------------------------------------- QUIZ --------------------------------------- */
-func setQuiz(stub shim.ChaincodeStubInterface, args []string) (string, error) {
+func setVote(stub shim.ChaincodeStubInterface, args []string) (string, error) {
 	if len(args) != 7 {
 		return "", fmt.Errorf("Incorrect arguments. Please input 8 args.")
 	}
@@ -248,12 +254,12 @@ func setQuiz(stub shim.ChaincodeStubInterface, args []string) (string, error) {
 	// 키 중복 검사
 	result, _ := stub.GetState(args[0])
 	if result != nil {
-		return "", fmt.Errorf("This key already exist")
+		return "", fmt.Errorf("digest('hex')")
 	}
 
 	// JSON  변환
-	var quiz = Quiz {
-		ObjectType: "Quiz",
+	var vote = Vote {
+		ObjectType: "Vote",
 		Id:			args[0],
 		Category:	args[1],
 		Title: 		args[2],
@@ -268,56 +274,56 @@ func setQuiz(stub shim.ChaincodeStubInterface, args []string) (string, error) {
 		Users:		"",	
 	}
 	// json 형식으로 변환
-	quizAsBytes, _ := json.Marshal(quiz)
+	voteAsBytes, _ := json.Marshal(vote)
 
-	err := stub.PutState(args[0], quizAsBytes)
+	err := stub.PutState(args[0], voteAsBytes)
 	if err != nil {
 		return "", fmt.Errorf("Failed to set asset: %s", args[0])
 	}
 
-	quizIdIndexKey, err := stub.CreateCompositeKey("quiz~id", []string{quiz.ObjectType, quiz.Id})
+	voteIdIndexKey, err := stub.CreateCompositeKey("vote~id", []string{vote.ObjectType, vote.Id})
 	if err != nil {
 		return "", fmt.Errorf("%s", err)
 	}
 
-	statusIdIndexKey, err := stub.CreateCompositeKey("status~id", []string{quiz.Status, quiz.Id})
+	statusIdIndexKey, err := stub.CreateCompositeKey("status~id", []string{vote.Status, vote.Id})
 	if err != nil {
 		return "", fmt.Errorf("%s", err)
 	}
 	
 	value := []byte{0x00}
 
-	stub.PutState(quizIdIndexKey, value)
+	stub.PutState(voteIdIndexKey, value)
 	stub.PutState(statusIdIndexKey, value)
 
-	return string(quizAsBytes), nil
+	return string(voteAsBytes), nil
 }
 
-func getQuiz(stub shim.ChaincodeStubInterface, args[] string) (string, error) {
+func getVote(stub shim.ChaincodeStubInterface, args[] string) (string, error) {
 	if len(args) != 1 {
 		return "", fmt.Errorf("Incorrect arguments. Please input 1 arg.")
 	}
 	id := args[0]
-	quizAsBytes, err := stub.GetState(id)
+	voteAsBytes, err := stub.GetState(id)
 
-	quizToTransfer := Quiz{}
-	err = json.Unmarshal(quizAsBytes, &quizToTransfer)
+	voteToTransfer := Vote{}
+	err = json.Unmarshal(voteAsBytes, &voteToTransfer)
 	if err != nil {
 		return "", fmt.Errorf("%s", err)
 	}
 	
 	// 완료된 퀴즈인 경우
-	if quizToTransfer.Status != "2" {
-		quizToTransfer.Count1 = ""
-		quizToTransfer.Count2 = ""
+	if voteToTransfer.Status != "2" {
+		voteToTransfer.Count1 = ""
+		voteToTransfer.Count2 = ""
 	}
 
-	quizJSONasBytes, _ := json.Marshal(quizToTransfer)
+	voteJSONasBytes, _ := json.Marshal(voteToTransfer)
 
-	return string(quizJSONasBytes), nil
+	return string(voteJSONasBytes), nil
 }
 
-func getQuizByStatus(stub shim.ChaincodeStubInterface, args []string) (string, error) {
+func getVoteByStatus(stub shim.ChaincodeStubInterface, args []string) (string, error) {
 	if len(args) != 1 {
 		return "", fmt.Errorf("Incorrect arguments. Please input 1 arg.")
 	}
@@ -351,7 +357,7 @@ func getQuizByStatus(stub shim.ChaincodeStubInterface, args []string) (string, e
 			buffer += ", "
 		}
 
-		result, err := getQuiz(stub, []string{returnedKey})
+		result, err := getVote(stub, []string{returnedKey})
 		if err != nil {
 			return "", fmt.Errorf("%s", err)
 		}
@@ -365,20 +371,20 @@ func getQuizByStatus(stub shim.ChaincodeStubInterface, args []string) (string, e
 }
 
 // For test (Not used)
-func getAllQuizzes(stub shim.ChaincodeStubInterface) (string, error) {
-	queriedIdByQuizIterator, err := stub.GetStateByPartialCompositeKey("quiz~id", []string{"Quiz"})
+func getAllVotes(stub shim.ChaincodeStubInterface) (string, error) {
+	queriedIdByVoteIterator, err := stub.GetStateByPartialCompositeKey("vote~id", []string{"Vote"})
 	if err != nil {
 		return "", fmt.Errorf("%s", err)
 	}
-	defer queriedIdByQuizIterator.Close()
+	defer queriedIdByVoteIterator.Close()
 
 	var buffer string
 	buffer = "["
 	comma := false
 
 	var i int
-	for i = 0; queriedIdByQuizIterator.HasNext(); i++ {
-		res, err := queriedIdByQuizIterator.Next()
+	for i = 0; queriedIdByVoteIterator.HasNext(); i++ {
+		res, err := queriedIdByVoteIterator.Next()
 		if err != nil {
 			return "", fmt.Errorf("%s", err)
 		}
@@ -395,7 +401,7 @@ func getAllQuizzes(stub shim.ChaincodeStubInterface) (string, error) {
 			buffer += ", "
 		}
 
-		result, err := getQuiz(stub, []string{returnedId})
+		result, err := getVote(stub, []string{returnedId})
 		if err != nil {
 			return "", fmt.Errorf("%s", err)
 		}
@@ -407,71 +413,71 @@ func getAllQuizzes(stub shim.ChaincodeStubInterface) (string, error) {
 	return string(buffer), nil
 }
 
-func changeQuizStatus(stub shim.ChaincodeStubInterface, args []string) (string, error) {
+func changeVoteStatus(stub shim.ChaincodeStubInterface, args []string) (string, error) {
 	if len(args) != 1 {
 		return "", fmt.Errorf("Incorrect arguments. Please input 1 args.")
 	}
 	id := args[0]
 
-	quizAsBytes, err := stub.GetState(id)
+	voteAsBytes, err := stub.GetState(id)
 	if err != nil {
 		return "", fmt.Errorf("%s", err)
-	} else if quizAsBytes == nil {
-		return "", fmt.Errorf("Quiz does not exist.")
+	} else if voteAsBytes == nil {
+		return "In changeVoteStatus: There are no votes that match this criteria.", nil
 	}
 
-	quizToTransfer := Quiz{}
-	err = json.Unmarshal(quizAsBytes, &quizToTransfer)
+	voteToTransfer := Vote{}
+	err = json.Unmarshal(voteAsBytes, &voteToTransfer)
 	if err != nil {
 		return "", fmt.Errorf("%s", err)
 	}
-	status, err := strconv.Atoi(quizToTransfer.Status)
+	status, err := strconv.Atoi(voteToTransfer.Status)
 	if err != nil {
 		return "", fmt.Errorf("%s", err)
 	}
 
 	indexName := "status~id"
 	blank := "\u0000"
-	oldStatusIdIndexKey := blank + indexName + blank + quizToTransfer.Status + blank + quizToTransfer.Id + blank
+	oldStatusIdIndexKey := blank + indexName + blank + voteToTransfer.Status + blank + voteToTransfer.Id + blank
 	err = stub.DelState(oldStatusIdIndexKey)
 	if err != nil {
 		return "", fmt.Errorf("%s", err)
 	}
 
 	status += 1
-	quizToTransfer.Status = strconv.Itoa(status)
+	voteToTransfer.Status = strconv.Itoa(status)
 
-	newStatusIdIndexKey, err := stub.CreateCompositeKey(indexName, []string{quizToTransfer.Status, quizToTransfer.Id})
+	newStatusIdIndexKey, err := stub.CreateCompositeKey(indexName, []string{voteToTransfer.Status, voteToTransfer.Id})
 	if err != nil {
 		return "", fmt.Errorf("Incorrect arguments. Expecting a key and a value")
 	}
 	value := []byte{0x00}
 	stub.PutState(newStatusIdIndexKey, value);
 
-	if quizToTransfer.Status == "2" {
-		count1, err := strconv.Atoi(quizToTransfer.Count1)
+	if voteToTransfer.Status == "2" {
+		count1, err := strconv.Atoi(voteToTransfer.Count1)
 		if err != nil {
 			return "", fmt.Errorf("%s", err)
 		}
-		count2, err := strconv.Atoi(quizToTransfer.Count2)
+		count2, err := strconv.Atoi(voteToTransfer.Count2)
 		if err != nil {
 			return "", fmt.Errorf("%s", err)
 		}
 		if count1 > count2 {
-			quizToTransfer.Result = quizToTransfer.Choice1
+			voteToTransfer.Result = voteToTransfer.Choice1
 		} else if count1 < count2 {
-			quizToTransfer.Result = quizToTransfer.Choice2
+			voteToTransfer.Result = voteToTransfer.Choice2
 		} else {
-			quizToTransfer.Result = "Draw"
+			voteToTransfer.Result = "Draw"
 		}
 	}
 
-	quizJSONasBytes, _ := json.Marshal(quizToTransfer)
-	err = stub.PutState(id, quizJSONasBytes)
+	voteJSONasBytes, _ := json.Marshal(voteToTransfer)
+	err = stub.PutState(id, voteJSONasBytes)
 	if err != nil {
 		return "", fmt.Errorf("%s", err)
 	}
-	return string(quizToTransfer.Result), nil
+	return string(voteToTransfer.Result), nil
 }
 
 func choice(stub shim.ChaincodeStubInterface, args[] string) (string, error) {
@@ -483,24 +489,24 @@ func choice(stub shim.ChaincodeStubInterface, args[] string) (string, error) {
 	choice 	:= args[1]
 	user	:= args[2]
 
-	quizAsBytes, err := stub.GetState(id)
+	voteAsBytes, err := stub.GetState(id)
 	if err != nil {
 		return "", fmt.Errorf("%s", err)
-	} else if quizAsBytes == nil {
-		return "", fmt.Errorf("Quiz does not exist.")
+	} else if voteAsBytes == nil {
+		return "", fmt.Errorf("Vote does not exist.")
 	}
 
-	quizToTransfer := Quiz{}
-	err = json.Unmarshal(quizAsBytes, &quizToTransfer)
+	voteToTransfer := Vote{}
+	err = json.Unmarshal(voteAsBytes, &voteToTransfer)
 	if err != nil {
 		return "", fmt.Errorf("%s", err)
 	}
 
-	if quizToTransfer.Status != "1" {
-		return "", fmt.Errorf("This quiz is not the time to choose.")
+	if voteToTransfer.Status != "1" {
+		return "", fmt.Errorf("This vote is not the time to choose.")
 	}
 
-	if strings.Contains(quizToTransfer.Users, user) {
+	if strings.Contains(voteToTransfer.Users, user) {
 		return "", fmt.Errorf("The user has already chosen.")
 	}
 /* --------------------------------------------------------------- */
@@ -519,15 +525,15 @@ func choice(stub shim.ChaincodeStubInterface, args[] string) (string, error) {
 		return "", fmt.Errorf("%s", err)
 	}
 
-	if userToTransfer.Quizzes != "" {
-		userToTransfer.Quizzes += ", "
+	if userToTransfer.Votes != "" {
+		userToTransfer.Votes += ", "
 	}
 
 	if userToTransfer.Choices != "" {
 		userToTransfer.Choices += ", "
 	}
 
-	if quizToTransfer.Category == "1" { // 유료 투표
+	if voteToTransfer.Category == "1" { // 유료 투표
 		token, err := strconv.Atoi(userToTransfer.Token)
 		if err != nil {
 			return "", fmt.Errorf("%s", err)
@@ -536,36 +542,36 @@ func choice(stub shim.ChaincodeStubInterface, args[] string) (string, error) {
 		userToTransfer.Token = strconv.Itoa(token)
 	}
 
-	userToTransfer.Quizzes += quizToTransfer.Title
+	userToTransfer.Votes += voteToTransfer.Title
 
 /* --------------------------------------------------------------- */
 
 	if choice == "0" {
-		count, err := strconv.Atoi(quizToTransfer.Count1)
+		count, err := strconv.Atoi(voteToTransfer.Count1)
 		if err != nil {
 			return "", fmt.Errorf("%s", err)
 		}
 		count += 1
-		quizToTransfer.Count1 = strconv.Itoa(count)
-		userToTransfer.Choices += quizToTransfer.Choice1
+		voteToTransfer.Count1 = strconv.Itoa(count)
+		userToTransfer.Choices += voteToTransfer.Choice1
 	} else {
-		count, err := strconv.Atoi(quizToTransfer.Count2)
+		count, err := strconv.Atoi(voteToTransfer.Count2)
 		if err != nil {
 			return "", fmt.Errorf("%s", err)
 		}
 		count += 1
-		quizToTransfer.Count2 = strconv.Itoa(count)
-		userToTransfer.Choices += quizToTransfer.Choice2
+		voteToTransfer.Count2 = strconv.Itoa(count)
+		userToTransfer.Choices += voteToTransfer.Choice2
 	}
 
-	if quizToTransfer.Users != "" {
-		quizToTransfer.Users += ", "
+	if voteToTransfer.Users != "" {
+		voteToTransfer.Users += ", "
 	}
 
-	quizToTransfer.Users += user
+	voteToTransfer.Users += user
 
-	quizJSONasBytes, _ := json.Marshal(quizToTransfer)
-	err = stub.PutState(id, quizJSONasBytes)
+	voteJSONasBytes, _ := json.Marshal(voteToTransfer)
+	err = stub.PutState(id, voteJSONasBytes)
 	if err != nil {
 		return "", fmt.Errorf("%s", err)
 	}
@@ -581,7 +587,7 @@ func choice(stub shim.ChaincodeStubInterface, args[] string) (string, error) {
 	return string("Choice succeed!"), nil
 }
 
-func getHistoryByQuizId(stub shim.ChaincodeStubInterface, args[] string) (string, error) {
+func getHistoryByVoteId(stub shim.ChaincodeStubInterface, args[] string) (string, error) {
 	if len(args) != 1 {
 		return "", fmt.Errorf("Incorrect number of arguments. Expecting 1 arg")
 	}
