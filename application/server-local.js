@@ -3,13 +3,15 @@ const timeModule = require('./modules/time');
 
 // 외부 모듈 포함
 const express = require('express');
-const session = require('express-session')
+const session = require('express-session');
+const cors = require('cors');
 const app = express();
 const bodyParser = require('body-parser');
 
 // 모듈
 app.use(bodyParser.urlencoded({extended:false}));
 app.use(bodyParser.json());
+app.use(cors());
 app.use(session({
     secret: 'secretK',
     resave: false,
