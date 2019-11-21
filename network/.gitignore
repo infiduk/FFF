@@ -2,3 +2,4 @@
 ./config/*
 ./crypto-config/*
 ./connection-backup.json
+./application/wallet/*
