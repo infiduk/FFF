@@ -26,12 +26,19 @@ class Board {
         });
     }
 
-    // 개발 필요
-    recommend(id, userName) {
+  
+    recommend(postId, userName) {
         return new Promise(async (resolve, reject) => {
             try {
-
-                resolve();
+                const post = await boardSchema.findById(postId);
+                console.log(post);
+                let recommender = post.recommender;
+                if (recommender.includes(userName)) reject('이미 투표하셨습니다.');
+                else {  
+                    recommender.push(userName);
+                    const result = await boardSchema.updateOne({ _id: postId }, { $set: { recommender }, $inc : { recommend: 1 }});
+                    resolve(result);
+                }
             } catch (err) {
                 reject(err);
             }
