@@ -47,8 +47,9 @@ userRouter.post('/login', async (req, res) => {
         const obj = JSON.parse(result);
         console.log("obj: " + JSON.stringify(obj));
         if (!obj) {
-            res.status(200).send("로그인 실패");
+            res.status(400).send("로그인 실패");
         } else {
+            console.log(`□□□ before set session: ${JSON.stringify(req.session)}`);
             req.session.user = {
                 name: obj.name,
                 birth: obj.birth,
@@ -58,11 +59,12 @@ userRouter.post('/login', async (req, res) => {
                 choices: obj.choices,
                 hpw
             }
+            console.log(`□□□ after set session: ${JSON.stringify(req.session)}`);
             const data = { user: req.session.user }
             res.status(200).send({msg: "로그인 성공", data: data });
         }
     } catch (error) {
-        console.error(`Failed to evaluate transaction: ${error}`);
+        console.error(`error: ${error}`);
         res.status(400).send({msg: "로그인 실패"});
     }
 });
