@@ -1,4 +1,4 @@
-const db = require('../db-connection');
+require('../db-connection');
 const mongoose = require('mongoose');
 const moment = require('../../modules/moment');
 
