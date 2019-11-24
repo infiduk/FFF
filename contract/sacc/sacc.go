@@ -13,8 +13,7 @@ import (
 	"strings" 		// 문자열 포함 검사
 	"bytes"
 	"time"	  		// Timestamp
-	// "math/rand"		// Random
-	"github.com/stretchr/stew/slice"	// Slice
+	"math/rand"		// Random
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 	"github.com/hyperledger/fabric/protos/peer"
 )
@@ -472,21 +471,25 @@ func changeVoteStatus(stub shim.ChaincodeStubInterface, args []string) (string, 
 		if err != nil {
 			return "", fmt.Errorf("%s", err)
 		}
+
+		seed := rand.NewSource(time.Now().UnixNano())
+		rnum := rand.New(seed)
+
 		if count1 > count2 {
 			voteToTransfer.Result = voteToTransfer.Choice1
-			// users1 := strings.Split(voteToTransfer.Users1, ", ")
-			// cUsers1 := len(users1)
-			// voteToTransfer.Winner = users1[rand.Intn(cUsers1 - 1)]
+			users1 := strings.Split(voteToTransfer.Users1, ", ")
+			rusers1 := rnum.Intn(len(users1))
+			voteToTransfer.Winner = users1[rusers1]
 		} else if count1 < count2 {
 			voteToTransfer.Result = voteToTransfer.Choice2
-			// users2 := strings.Split(voteToTransfer.Users2, ", ")
-			// cUsers2 := len(users2)
-			// voteToTransfer.Winner = users2[rand.Intn(cUsers2 - 1)]
+			users2 := strings.Split(voteToTransfer.Users2, ", ")
+			rusers2 := rnum.Intn(len(users2))
+			voteToTransfer.Winner = users2[rusers2]
 		} else {
 			voteToTransfer.Result = "무승부"
-			// users := strings.Split(voteToTransfer.Users, ", ")
-			// cUsers := len(users)
-			// voteToTransfer.Winner = users[rand.Intn(cUsers - 1)]
+			users := strings.Split(voteToTransfer.Users, ", ")
+			rusers := rnum.Intn(len(users))
+			voteToTransfer.Winner = users[rusers]
 		}
 	}
 
@@ -525,7 +528,7 @@ func choice(stub shim.ChaincodeStubInterface, args[] string) (string, error) {
 	}
 
 	users := strings.Split(voteToTransfer.Users, ", ")
-	if slice.ContainsString(users, user) {
+	if contains(users, user) {
 		return "", fmt.Errorf("The user has already chosen.")
 	}
 /* --------------------------------------------------------------- */
@@ -672,6 +675,15 @@ func getHistoryByVoteId(stub shim.ChaincodeStubInterface, args[] string) (string
 
 
 /* --------------------------------------- QUIZ --------------------------------------- */
+
+func contains(slice []string, item string) bool {
+	for _, v := range slice {
+		if v == item {
+			return true
+		}
+	}
+	return false
+}
 
 func main() {
 	if err := shim.Start(new(SimpleAsset)); err != nil {
