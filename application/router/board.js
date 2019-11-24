@@ -6,8 +6,7 @@ const boardRouter = express.Router();
 const boardModel = require('../model/board');
 
 boardRouter.post('/post', async (req, res) => {
-    // const user = req.body.user; // For test on Postman
-    const user = req.session.user; // For service
+    const user = req.session.user;
     const post = {
         title: req.body.title,
         context: req.body.context,
@@ -37,8 +36,7 @@ boardRouter.get('/post', async (req, res) => {
 });
 
 boardRouter.post('/post/recommend', async (req, res) => {
-    // const user = req.body.user; // For test on Postman
-    const user = req.session.user; // For service
+    const user = req.session.user;
     const postId = req.body.postId;
     try {
         const result = await boardModel.recommend(postId, user.name);

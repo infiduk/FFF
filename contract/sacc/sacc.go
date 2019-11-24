@@ -9,11 +9,12 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"strconv" // 문자열 숫자 변환
-	"strings" // 문자열 포함 검사
+	"strconv" 		// 문자열 숫자 변환
+	"strings" 		// 문자열 포함 검사
 	"bytes"
-	"time"	  // Timestamp
-
+	"time"	  		// Timestamp
+	// "math/rand"		// Random
+	"github.com/stretchr/stew/slice"	// Slice
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 	"github.com/hyperledger/fabric/protos/peer"
 )
@@ -24,31 +25,34 @@ type SimpleAsset struct {
 
 // 회원 클래스
 type User struct {
-	ObjectType	 string `json:"docType"`
-	Id			 string `json:"id"`		 // 회원 식별값
-	Name		 string `json:"name"`	 // 서비스에서 사용할 이름
-	Birth		 string `json:"birth"`	 // 출생 년도
-	Gender		 string `json:"gender"`	 // 성별
-	Token		 string `json:"token"`	 // 투표권
-	Votes	 	 string `json:"votes"` // 참여한 투표 id
-	Choices		 string `json:"choices"` // 선택 항목
+	ObjectType	string `json:"docType"`
+	Id			string `json:"id"`		 // 회원 식별값
+	Name		string `json:"name"`	 // 서비스에서 사용할 이름
+	Birth		string `json:"birth"`	 // 출생 년도
+	Gender		string `json:"gender"`	 // 성별
+	Token		string `json:"token"`	 // 투표권
+	Votes	 	string `json:"votes"`    // 참여한 투표 id
+	Choices		string `json:"choices"`  // 선택 항목
 }
 
-// 퀴즈 클래스 (World State에 담기는 정보)
+// 투표 클래스 (World State에 담기는 정보)
 type Vote struct {
-	ObjectType	 string `json:"docType"` // CouchDB의 인덱스 기능을 쓰기위한 파라미터, 이 오브젝트 타입에 만든 구조체 이름을 넣으면 인덱스를 찾을 수 있음
-	Id			 string `json:"id"` 	 // 퀴즈 식별값
-	Category	 string `json:"category"`// 퀴즈 종류 0: 무료 / 1: 유료
-	Title   	 string `json:"title"` 	 // 퀴즈 제목
-	Begin		 string `json:"begin"`	 // 시작 시간
-	End			 string `json:"end"`	 // 종료 시간
-	Choice1  	 string `json:"choice1"` // 선택지 1
-	Count1	 	 string `json:"count1"`  // 선택지 1의 득표 수
-	Choice2		 string `json:"choice2"` // 선택지 2
-	Count2		 string `json:"count2"`	 // 선택지 2의 득표 수
-	Result		 string `json:"result"`	 // 결과
-	Status		 string `json:"status"`	 // 0: 생성, 1: 진행 중, 2: 종료
-	Users		 string `json:"users"`	 // 유저 id
+	ObjectType	string `json:"docType"`  // CouchDB의 인덱스 기능을 쓰기위한 파라미터, 이 오브젝트 타입에 만든 구조체 이름을 넣으면 인덱스를 찾을 수 있음
+	Id			string `json:"id"` 	 	 // 투표 식별값
+	Category	string `json:"category"` // 투표 종류 0: 무료 / 1: 유료
+	Title   	string `json:"title"` 	 // 투표 제목
+	Begin		string `json:"begin"`	 // 시작 시간
+	End			string `json:"end"`	 	 // 종료 시간
+	Choice1  	string `json:"choice1"`  // 선택지 1
+	Count1	 	string `json:"count1"`   // 선택지 1의 득표 수
+	Users1		string `json:"users1"`	 // 1 선택한 User 배열
+	Choice2		string `json:"choice2"`  // 선택지 2
+	Count2		string `json:"count2"`	 // 선택지 2의 득표 수
+	Users2		string `json:"users2"`	 // 2 선택한 User 배열
+	Result		string `json:"result"`	 // 결과
+	Status		string `json:"status"`	 // 0: 생성, 1: 진행 중, 2: 종료
+	Users		string `json:"users"`	 // 투표에 참여한 User 배열
+	Winner		string `json:"winner"`	 // 당첨자
 }
 
 // 초기화 함수
@@ -78,7 +82,7 @@ func (t *SimpleAsset) Invoke(stub shim.ChaincodeStubInterface) peer.Response {
 		result, err = getVote(stub, args) 
 	} else if fn == "getVoteByStatus" {
 		result, err = getVoteByStatus(stub, args)
-	} else if fn == "getAllVotes" {		// for test
+	} else if fn == "getAllVotes" {			// for test
 		result, err = getAllVotes(stub)
 	} else if fn == "changeVoteStatus" {	// 시간 정보에 따라 Status 변경
 		result, err = changeVoteStatus(stub, args)
@@ -120,7 +124,7 @@ func setUser(stub shim.ChaincodeStubInterface, args []string) (string, error) {
 		Birth:		args[2],
 		Gender:		args[3],
 		Token:		"10",
-		Votes:	"",
+		Votes:		"",
 		Choices:	"",
 	}
 
@@ -267,11 +271,14 @@ func setVote(stub shim.ChaincodeStubInterface, args []string) (string, error) {
 		End: 		args[4],
 		Choice1: 	args[5],
 		Count1: 	"0",
+		Users1:		"",
 		Choice2: 	args[6],
 		Count2: 	"0",
+		Users2:		"",
 		Result: 	"",	
 		Status: 	"0",
-		Users:		"",	
+		Users:		"",
+		Winner:		"",
 	}
 	// json 형식으로 변환
 	voteAsBytes, _ := json.Marshal(vote)
@@ -312,10 +319,12 @@ func getVote(stub shim.ChaincodeStubInterface, args[] string) (string, error) {
 		return "", fmt.Errorf("%s", err)
 	}
 	
-	// 완료된 퀴즈인 경우
+	// 완료되지 않은 투표인 경우
 	if voteToTransfer.Status != "2" {
 		voteToTransfer.Count1 = ""
 		voteToTransfer.Count2 = ""
+		voteToTransfer.Users1 = ""
+		voteToTransfer.Users2 = ""
 	}
 
 	voteJSONasBytes, _ := json.Marshal(voteToTransfer)
@@ -465,10 +474,19 @@ func changeVoteStatus(stub shim.ChaincodeStubInterface, args []string) (string, 
 		}
 		if count1 > count2 {
 			voteToTransfer.Result = voteToTransfer.Choice1
+			// users1 := strings.Split(voteToTransfer.Users1, ", ")
+			// cUsers1 := len(users1)
+			// voteToTransfer.Winner = users1[rand.Intn(cUsers1 - 1)]
 		} else if count1 < count2 {
 			voteToTransfer.Result = voteToTransfer.Choice2
+			// users2 := strings.Split(voteToTransfer.Users2, ", ")
+			// cUsers2 := len(users2)
+			// voteToTransfer.Winner = users2[rand.Intn(cUsers2 - 1)]
 		} else {
-			voteToTransfer.Result = "Draw"
+			voteToTransfer.Result = "무승부"
+			// users := strings.Split(voteToTransfer.Users, ", ")
+			// cUsers := len(users)
+			// voteToTransfer.Winner = users[rand.Intn(cUsers - 1)]
 		}
 	}
 
@@ -506,7 +524,8 @@ func choice(stub shim.ChaincodeStubInterface, args[] string) (string, error) {
 		return "", fmt.Errorf("This vote is not the time to choose.")
 	}
 
-	if strings.Contains(voteToTransfer.Users, user) {
+	users := strings.Split(voteToTransfer.Users, ", ")
+	if slice.ContainsString(users, user) {
 		return "", fmt.Errorf("The user has already chosen.")
 	}
 /* --------------------------------------------------------------- */
@@ -546,7 +565,7 @@ func choice(stub shim.ChaincodeStubInterface, args[] string) (string, error) {
 
 /* --------------------------------------------------------------- */
 
-	if choice == "0" {
+	if choice == voteToTransfer.Choice1 {
 		count, err := strconv.Atoi(voteToTransfer.Count1)
 		if err != nil {
 			return "", fmt.Errorf("%s", err)
@@ -554,6 +573,10 @@ func choice(stub shim.ChaincodeStubInterface, args[] string) (string, error) {
 		count += 1
 		voteToTransfer.Count1 = strconv.Itoa(count)
 		userToTransfer.Choices += voteToTransfer.Choice1
+		if voteToTransfer.Users1 != "" {
+			voteToTransfer.Users1 += ", "
+		}
+		voteToTransfer.Users1 += user
 	} else {
 		count, err := strconv.Atoi(voteToTransfer.Count2)
 		if err != nil {
@@ -562,6 +585,10 @@ func choice(stub shim.ChaincodeStubInterface, args[] string) (string, error) {
 		count += 1
 		voteToTransfer.Count2 = strconv.Itoa(count)
 		userToTransfer.Choices += voteToTransfer.Choice2
+		if voteToTransfer.Users2 != "" {
+			voteToTransfer.Users2 += ", "
+		}
+		voteToTransfer.Users2 += user
 	}
 
 	if voteToTransfer.Users != "" {

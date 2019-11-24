@@ -4,7 +4,6 @@ const timeModule = require('./modules/time');
 // 외부 모듈 포함
 const express = require('express');
 const session = require('express-session');
-const Filestore = require('session-file-store')(session);
 const cors = require('cors');
 const app = express();
 const bodyParser = require('body-parser');
@@ -17,7 +16,6 @@ app.use(session({
     secret: 'secretK',
     resave: false,
     saveUninitialized: true,
-    store: new Filestore()
 }));
 
 
