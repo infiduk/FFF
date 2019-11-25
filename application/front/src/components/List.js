@@ -13,10 +13,7 @@ export const MainList = props => {
                 <div className='row'>
                     <h6 style={{ marginTop: 5, flex: 0.7 }}>{props.date} 마감</h6>
                     <div style={{ marginTop: 5, textAlign: 'right', flex: 0.5 }}>
-                        {props.category === '0'
-                            ? <h6 style={{ marginRight: 5 }}>무료투표</h6>
-                            : <h6 style={{ marginRight: 5 }}>무료투표</h6>
-                        }
+                    <h6 style={{ marginRight: 5 }}>투표</h6>
                     </div>
                 </div>
             </div>
@@ -32,10 +29,7 @@ export const ResultList = props => {
                 <div className='row'>
                     <h6 style={{ marginTop: 5, flex: 0.7 }}>{props.winner}</h6>
                     <div style={{ marginTop: 5, textAlign: 'right', flex: 0.5 }}>
-                        {props.category === '0'
-                            ? <h6 style={{ marginRight: 5 }}>무료투표</h6>
-                            : <h6 style={{ marginRight: 5 }}>무료투표</h6>
-                        }
+                    <h6 style={{ marginRight: 5 }}>투표</h6>
                     </div>
                 </div>
             </div>

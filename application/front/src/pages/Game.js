@@ -93,10 +93,7 @@ export default class Game extends Component {
                 >
                     <div style={{ marginTop: 20, padding: 25 }}>
                         <h2 style={{ textAlign: 'center', color: '#d8b1d6' }}>{detail.title}</h2>
-                        {this.state.detail.category === '0'
-                            ? <h5 style={{ marginTop: 30, textAlign: 'center' }}>무료투표</h5>
-                            : <h5 style={{ marginTop: 30, textAlign: 'center' }}>무료투표</h5>
-                        }
+                        <h5 style={{ marginTop: 30, textAlign: 'center' }}>투표</h5>
                         <h5 style={{ textAlign: 'center' }}>{detail.end} 마감</h5>
                         <div className='row' style={{ alignItems: 'center', justifyContent: 'center' }}>
                             <div style={{ marginTop: 20, marginBottom: 20, marginRight: 3 }}>
