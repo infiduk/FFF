@@ -282,7 +282,7 @@ class VoteModel {
                 await contract.submitTransaction('choice', vote.id.toString(), vote.choose.toString(), vote.user.toString());
                 console.log('Transaction has been submitted');
 
-                const result = await contract.evaluateTransaction('getVote', vote.id.toString());
+                const result = await contract.evaluateTransaction('getUserByName', vote.user.toString());
                 console.log('Transaction has been evaluated');
 
                 // Disconnect from the gateway.
