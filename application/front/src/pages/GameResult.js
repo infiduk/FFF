@@ -61,7 +61,8 @@ export default class GameResult extends Component {
         return (
             <div>
                 <div style={{ margin: 25 }}>
-                    <h2 style={{ marginTop: 30, marginBottom: 30, textAlign: 'center', color: '#d8b1d6' }}>{detail.title}</h2>
+                    <h2 style={{ marginTop: 30, marginBottom: 10, textAlign: 'center', color: '#d8b1d6' }}>{detail.title}</h2>
+                    <h5 style={{ marginBottom: 20, textAlign: 'center' }}>총 투표 수: {totalVotes}표</h5>
                     <div style={{ padding: 10, backgroundColor: '#fafafa' }}>
                         <div style={{ padding: 20 }}>
                             <h5>{detail.choice1}</h5>
