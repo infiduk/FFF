@@ -5,6 +5,8 @@ import 'bootstrap/dist/css/bootstrap.min.css'
 
 import { HistoryList } from '../components/List'
 
+import history from '../assets/history.png'
+
 export default class History extends Component {
     constructor(props) {
         super(props)
@@ -48,7 +50,11 @@ export default class History extends Component {
         return (
             <div>
                 <div style={{ margin: 10 }}>
-                    <h3 style={{ marginLeft: 10, color: '#d8b1d6' }}>투표 이력 목록</h3>
+                <img
+                        alt='history'
+                        src={history}
+                        style={{ height: '70px', marginTop: '-15px', marginBottom: '-10px', marginLeft: 15 }}
+                    />
                     <ListGroup variant='flush'>
                         <br />
                         {this.state.list.map(list => {

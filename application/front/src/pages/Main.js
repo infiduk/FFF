@@ -5,6 +5,8 @@ import 'bootstrap/dist/css/bootstrap.min.css'
 
 import { MainList, ToBeList } from '../components/List'
 
+import quizlist from '../assets/quiz-list.png'
+
 export default class Main extends Component {
     constructor(props) {
         super(props)
@@ -43,7 +45,11 @@ export default class Main extends Component {
         return (
             <div>
                 <div style={{ margin: 10 }}>
-                    <h3 style={{ marginLeft: 10, color: '#d8b1d6' }}>퀴즈 목록</h3>
+                    <img
+                        alt='quiz-list'
+                        src={quizlist}
+                        style={{ height: '70px', marginTop: '-15px', marginBottom: '-10px', marginLeft: 15 }}
+                    />
                     <ListGroup variant='flush'>
                         <br />
                         {this.state.list.map(list => {
@@ -52,7 +58,8 @@ export default class Main extends Component {
                                     <MainList
                                         key={`list-${list.id}`}
                                         href={`/game/${list.id}`}
-                                        title={list.title}
+                                        choice1={list.choice1}
+                                        choice2={list.choice2}
                                         date={list.end}
                                         category={list.category}
                                     />
@@ -62,7 +69,8 @@ export default class Main extends Component {
                                     <ToBeList
                                         key={`list-${list.id}`}
                                         href={`/game/${list.id}`}
-                                        title={list.title}
+                                        choice1={list.choice1}
+                                        choice2={list.choice2}
                                         date={list.end}
                                         category={list.category}
                                     />

@@ -5,6 +5,8 @@ import 'bootstrap/dist/css/bootstrap.min.css'
 
 import { ProposeList } from '../components/List'
 
+import proposelist from '../assets/propose-list.png'
+
 export default class Propose extends Component {
     constructor(props) {
         super(props)
@@ -68,7 +70,11 @@ export default class Propose extends Component {
             <div>
                 <div style={{ margin: 10 }}>
                     <div className='row' style={{ marginBottom: 10 }}>
-                        <h3 style={{ marginLeft: 20, color: '#d8b1d6' }}>문제 제안 목록</h3>
+                    <img
+                        alt='propose-list'
+                        src={proposelist}
+                        style={{ height: '70px', marginTop: '-15px', marginBottom: '-10px', marginLeft: 15 }}
+                    />
                         <Button href='/proposeQuiz' style={{ marginLeft: 30, backgroundColor: '#fff', borderColor: '#d8b1d6', color: '#d8b1d6' }}>문제 제안</Button>
                     </div>
                     <ListGroup variant='flush'>

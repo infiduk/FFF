@@ -5,6 +5,8 @@ import 'bootstrap/dist/css/bootstrap.min.css'
 
 import { ResultList } from '../components/List'
 
+import resultlist from '../assets/result-list.png'
+
 export default class Result extends Component {
     constructor(props) {
         super(props)
@@ -43,7 +45,11 @@ export default class Result extends Component {
         return (
             <div>
                 <div style={{ margin: 10 }}>
-                    <h3 style={{ marginLeft: 10, color: '#d8b1d6' }}>퀴즈 결과 목록</h3>
+                    <img
+                        alt='quiz-list'
+                        src={resultlist}
+                        style={{ height: '70px', marginTop: '-15px', marginBottom: '-10px', marginLeft: 15 }}
+                    />
                     <ListGroup variant='flush'>
                         <br />
                         {this.state.list.map(list => {
@@ -51,7 +57,8 @@ export default class Result extends Component {
                                 <ResultList
                                     key={`list-${list.id}`}
                                     href={`/gameResult/${list.id}`}
-                                    title={list.title}
+                                    choice1={list.choice1}
+                                    choice2={list.choice2}
                                     winner={list.result} category={list.category} />
                             )
                         })}
