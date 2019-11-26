@@ -30,8 +30,9 @@ type User struct {
 	Birth		string `json:"birth"`	 // 출생 년도
 	Gender		string `json:"gender"`	 // 성별
 	Token		string `json:"token"`	 // 투표권
-	Votes	 	string `json:"votes"`    // 참여한 투표 id
+	Votes	 	string `json:"votes"`    // 참여한 투표 title
 	Choices		string `json:"choices"`  // 선택 항목
+	Values		string `json:"values"`	 // 투표에 사용한 토큰 수
 }
 
 // 투표 클래스 (World State에 담기는 정보)
@@ -44,13 +45,15 @@ type Vote struct {
 	End			string `json:"end"`	 	 // 종료 시간
 	Choice1  	string `json:"choice1"`  // 선택지 1
 	Count1	 	string `json:"count1"`   // 선택지 1의 득표 수
-	Users1		string `json:"users1"`	 // 1 선택한 User 배열
+	Users1		string `json:"users1"`	 // 1 선택한 User 리스트
+	Values1		string `json:"values1"`	 // 투표에 사용한 토큰 수
 	Choice2		string `json:"choice2"`  // 선택지 2
 	Count2		string `json:"count2"`	 // 선택지 2의 득표 수
-	Users2		string `json:"users2"`	 // 2 선택한 User 배열
+	Users2		string `json:"users2"`	 // 2 선택한 User 리스트
+	Values2		string `json:"values2"`	 // 투표에 사용한 토큰 수
 	Result		string `json:"result"`	 // 결과
 	Status		string `json:"status"`	 // 0: 생성, 1: 진행 중, 2: 종료
-	Users		string `json:"users"`	 // 투표에 참여한 User 배열
+	Reward		string `json:"reward"`	 // 보상으로 지급되는 토큰
 	Winner		string `json:"winner"`	 // 당첨자
 }
 
@@ -122,26 +125,27 @@ func setUser(stub shim.ChaincodeStubInterface, args []string) (string, error) {
 		Name:		args[1],
 		Birth:		args[2],
 		Gender:		args[3],
-		Token:		"10",
+		Token:		"300",
 		Votes:		"",
 		Choices:	"",
+		Values:		"",
 	}
 
 	userAsBytes, _ := json.Marshal(user)
 
 	err := stub.PutState(args[0], userAsBytes)
 	if err != nil {
-		return "", fmt.Errorf("Failed to set asset: %s", args[0]);
+		return "", fmt.Errorf("Failed to set asset: %s", err);
 	}
 
 	nameIdIndexKey, err := stub.CreateCompositeKey("name~id", []string{user.Name, user.Id})
 	if err != nil {
-		return "", fmt.Errorf("%s", err)
+		return "", fmt.Errorf("Failed to set composite key 'name~id': %s", err)
 	}
 	
 	userIdIndexKey, err := stub.CreateCompositeKey("user~id", []string{user.ObjectType, user.Id})
 	if err != nil {
-		return "", fmt.Errorf("%s", err)
+		return "", fmt.Errorf("Failed to set composite key 'user~id': %s", err)
 	}
 
 	// value 에 비어있는 바이트 배열 생성
@@ -155,12 +159,12 @@ func setUser(stub shim.ChaincodeStubInterface, args []string) (string, error) {
 
 func getUser(stub shim.ChaincodeStubInterface, args []string) (string, error) {
 	if len(args) != 1 {
-		return "", fmt.Errorf("Incorrect arguments. Please input 1 arg.")
+		return "", fmt.Errorf("Incorrect arguments. Expecting a key.")
 	}
 	id := args[0]
 	userAsBytes, err := stub.GetState(id)
 	if err != nil {
-		return "", fmt.Errorf("User does not exist.")
+		return "", fmt.Errorf("User does not exist: %s", err)
 	}
 
 	return string(userAsBytes), nil
@@ -168,12 +172,12 @@ func getUser(stub shim.ChaincodeStubInterface, args []string) (string, error) {
 
 func getUserByName(stub shim.ChaincodeStubInterface, args []string) (string, error) {
 	if len(args) != 1 {
-		return "", fmt.Errorf("Incorrect arguments. Expecting a key")
+		return "", fmt.Errorf("Incorrect arguments. Expecting a key.")
 	}
 	name := args[0]
 	queriedIdByNameIterator, err := stub.GetStateByPartialCompositeKey("name~id", []string{name})
 	if err != nil {
-		return "", fmt.Errorf("%s", err)
+		return "", fmt.Errorf("Failed to get state by partial composite key 'name~id': %s", err)
 	}
 	defer queriedIdByNameIterator.Close()
 
@@ -182,19 +186,19 @@ func getUserByName(stub shim.ChaincodeStubInterface, args []string) (string, err
 	for i = 0; queriedIdByNameIterator.HasNext(); i++ {
 		res, err := queriedIdByNameIterator.Next()
 		if err != nil {
-			return "", fmt.Errorf("%s", err)
+			return "", fmt.Errorf("An error occurred while querying the id by name: %s", err)
 		}
 		objectType, compositeKeyParts, err := stub.SplitCompositeKey(res.Key)
 		if err != nil {
-			return "", fmt.Errorf("%s", err)
+			return "", fmt.Errorf("An error occurred while truncating the composite key: %s", err)
 		}
 		returnedName := compositeKeyParts[0]
 		returnedKey := compositeKeyParts[1]
-		fmt.Printf("- found a key from index:%s name:%s key:%s\n", objectType, returnedName, returnedKey)
+		fmt.Printf("Found a key from index: %s name: %s key: %s\n", objectType, returnedName, returnedKey)
 
 		userAsBytes, err := stub.GetState(returnedKey)
 		if err != nil {
-			return "", fmt.Errorf("%s", err)
+			return "", fmt.Errorf("User does not exist: %s", err)
 		}
 
 		result = userAsBytes
@@ -207,7 +211,7 @@ func getUserByName(stub shim.ChaincodeStubInterface, args []string) (string, err
 func getAllUsers(stub shim.ChaincodeStubInterface) (string, error) {
 	queriedIdByUserIterator, err := stub.GetStateByPartialCompositeKey("user~id", []string{"User"})
 	if err != nil {
-		return "", fmt.Errorf("%s", err)
+		return "", fmt.Errorf("Failed to get state by partial composite key 'user~id': %s", err)
 	}
 	defer queriedIdByUserIterator.Close()
 
@@ -219,24 +223,24 @@ func getAllUsers(stub shim.ChaincodeStubInterface) (string, error) {
 	for i = 0; queriedIdByUserIterator.HasNext(); i++ {
 		res, err := queriedIdByUserIterator.Next()
 		if err != nil {
-			return "", fmt.Errorf("%s", err)
+			return "", fmt.Errorf("An error occurred while querying the id by name: %s", err)
 		}
 
 		objectType, compositeKeyParts, err := stub.SplitCompositeKey(res.Key)
 		if err != nil {
-			return "", fmt.Errorf("%s", err)
+			return "", fmt.Errorf("An error occurred while truncating the composite key: %s", err)
 		}
 
 		returnedObjectType := compositeKeyParts[0]
 		returnedId := compositeKeyParts[1]
-		fmt.Printf("- found a key from index:%s name:%s key:%s\n", objectType, returnedObjectType, returnedId)
+		fmt.Printf("Found a key from index: %s objectType: %s id: %s\n", objectType, returnedObjectType, returnedId)
 		if comma == true {
 			buffer += ", "
 		}
 
 		result, err := getUser(stub, []string{returnedId})
 		if err != nil {
-			return "", fmt.Errorf("%s", err)
+			return "", fmt.Errorf("User does not exist: %s", err)
 		}
 		buffer += result
 		comma = true
@@ -251,13 +255,13 @@ func getAllUsers(stub shim.ChaincodeStubInterface) (string, error) {
 /* --------------------------------------- QUIZ --------------------------------------- */
 func setVote(stub shim.ChaincodeStubInterface, args []string) (string, error) {
 	if len(args) != 7 {
-		return "", fmt.Errorf("Incorrect arguments. Please input 8 args.")
+		return "", fmt.Errorf("Incorrect arguments. Please input 7 args.")
 	}
 
 	// 키 중복 검사
 	result, _ := stub.GetState(args[0])
 	if result != nil {
-		return "", fmt.Errorf("digest('hex')")
+		return "", fmt.Errorf("Vote does not exist.")
 	}
 
 	// JSON  변환
@@ -265,18 +269,20 @@ func setVote(stub shim.ChaincodeStubInterface, args []string) (string, error) {
 		ObjectType: "Vote",
 		Id:			args[0],
 		Category:	args[1],
-		Title: 		args[2],
-		Begin: 		args[3],
-		End: 		args[4],
-		Choice1: 	args[5],
+		Title: 		args[4] + " vs " + args[5],
+		Begin: 		args[2],
+		End: 		args[3],
+		Choice1: 	args[4],
 		Count1: 	"0",
 		Users1:		"",
-		Choice2: 	args[6],
+		Values1:	"",
+		Choice2: 	args[5],
 		Count2: 	"0",
 		Users2:		"",
+		Values2:	"",
 		Result: 	"",	
 		Status: 	"0",
-		Users:		"",
+		Reward:		args[6],
 		Winner:		"",
 	}
 	// json 형식으로 변환
@@ -284,17 +290,17 @@ func setVote(stub shim.ChaincodeStubInterface, args []string) (string, error) {
 
 	err := stub.PutState(args[0], voteAsBytes)
 	if err != nil {
-		return "", fmt.Errorf("Failed to set asset: %s", args[0])
+		return "", fmt.Errorf("Failed to set asset: %s", err)
 	}
 
 	voteIdIndexKey, err := stub.CreateCompositeKey("vote~id", []string{vote.ObjectType, vote.Id})
 	if err != nil {
-		return "", fmt.Errorf("%s", err)
+		return "", fmt.Errorf("Failed to get state by partial composite key 'vote~id': %s", err)
 	}
 
 	statusIdIndexKey, err := stub.CreateCompositeKey("status~id", []string{vote.Status, vote.Id})
 	if err != nil {
-		return "", fmt.Errorf("%s", err)
+		return "", fmt.Errorf("Failed to get state by partial composite key 'status~id': %s", err)
 	}
 	
 	value := []byte{0x00}
@@ -307,15 +313,18 @@ func setVote(stub shim.ChaincodeStubInterface, args []string) (string, error) {
 
 func getVote(stub shim.ChaincodeStubInterface, args[] string) (string, error) {
 	if len(args) != 1 {
-		return "", fmt.Errorf("Incorrect arguments. Please input 1 arg.")
+		return "", fmt.Errorf("Incorrect arguments. Expecting a key.")
 	}
 	id := args[0]
 	voteAsBytes, err := stub.GetState(id)
+	if err != nil {
+		return "", fmt.Errorf("Vote does not exist: %s", err)
+	}
 
 	voteToTransfer := Vote{}
 	err = json.Unmarshal(voteAsBytes, &voteToTransfer)
 	if err != nil {
-		return "", fmt.Errorf("%s", err)
+		return "", fmt.Errorf("An error occurred during unmarshal: %s", err)
 	}
 	
 	// 완료되지 않은 투표인 경우
@@ -324,6 +333,8 @@ func getVote(stub shim.ChaincodeStubInterface, args[] string) (string, error) {
 		voteToTransfer.Count2 = ""
 		voteToTransfer.Users1 = ""
 		voteToTransfer.Users2 = ""
+		voteToTransfer.Values1 = ""
+		voteToTransfer.Values2 = ""
 	}
 
 	voteJSONasBytes, _ := json.Marshal(voteToTransfer)
@@ -338,7 +349,7 @@ func getVoteByStatus(stub shim.ChaincodeStubInterface, args []string) (string, e
 	status := args[0]
 	queriedIdByStatusIterator, err := stub.GetStateByPartialCompositeKey("status~id", []string{status})
 	if err != nil {
-		return "", fmt.Errorf("%s", err)
+		return "", fmt.Errorf("Failed to get state by partial composite key 'status~id': %s", err)
 	}
 	defer queriedIdByStatusIterator.Close()
 
@@ -350,12 +361,12 @@ func getVoteByStatus(stub shim.ChaincodeStubInterface, args []string) (string, e
 	for i = 0; queriedIdByStatusIterator.HasNext(); i++ {
 		res, err := queriedIdByStatusIterator.Next()
 		if err != nil {
-			return "", fmt.Errorf("%s", err)
+			return "", fmt.Errorf("An error occurred while querying the id by status: %s", err)
 		}
 
 		objectType, compositeKeyParts, err := stub.SplitCompositeKey(res.Key)
 		if err != nil {
-			return "", fmt.Errorf("%s", err)
+			return "", fmt.Errorf("An error occurred while truncating the composite key: %s", err)
 		}
 
 		returnedName := compositeKeyParts[0]
@@ -382,7 +393,7 @@ func getVoteByStatus(stub shim.ChaincodeStubInterface, args []string) (string, e
 func getAllVotes(stub shim.ChaincodeStubInterface) (string, error) {
 	queriedIdByVoteIterator, err := stub.GetStateByPartialCompositeKey("vote~id", []string{"Vote"})
 	if err != nil {
-		return "", fmt.Errorf("%s", err)
+		return "", fmt.Errorf("Failed to get state by partial composite key 'vote~id': %s", err)
 	}
 	defer queriedIdByVoteIterator.Close()
 
@@ -394,12 +405,12 @@ func getAllVotes(stub shim.ChaincodeStubInterface) (string, error) {
 	for i = 0; queriedIdByVoteIterator.HasNext(); i++ {
 		res, err := queriedIdByVoteIterator.Next()
 		if err != nil {
-			return "", fmt.Errorf("%s", err)
+			return "", fmt.Errorf("An error occurred while querying the id by vote: %s", err)
 		}
 
 		objectType, compositeKeyParts, err := stub.SplitCompositeKey(res.Key)
 		if err != nil {
-			return "", fmt.Errorf("%s", err)
+			return "", fmt.Errorf("An error occurred while truncating the composite key: %s", err)
 		}
 
 		returnedObjectType := compositeKeyParts[0]
@@ -437,12 +448,10 @@ func changeVoteStatus(stub shim.ChaincodeStubInterface, args []string) (string, 
 	voteToTransfer := Vote{}
 	err = json.Unmarshal(voteAsBytes, &voteToTransfer)
 	if err != nil {
-		return "", fmt.Errorf("%s", err)
+		return "", fmt.Errorf("An error occurred during unmarshal: %s", err)
 	}
-	status, err := strconv.Atoi(voteToTransfer.Status)
-	if err != nil {
-		return "", fmt.Errorf("%s", err)
-	}
+
+	status, _ := strconv.Atoi(voteToTransfer.Status)
 
 	indexName := "status~id"
 	blank := "\u0000"
@@ -452,7 +461,7 @@ func changeVoteStatus(stub shim.ChaincodeStubInterface, args []string) (string, 
 		return "", fmt.Errorf("%s", err)
 	}
 
-	status += 1
+	status ++
 	voteToTransfer.Status = strconv.Itoa(status)
 
 	newStatusIdIndexKey, err := stub.CreateCompositeKey(indexName, []string{voteToTransfer.Status, voteToTransfer.Id})
@@ -460,59 +469,98 @@ func changeVoteStatus(stub shim.ChaincodeStubInterface, args []string) (string, 
 		return "", fmt.Errorf("Incorrect arguments. Expecting a key and a value")
 	}
 	value := []byte{0x00}
-	stub.PutState(newStatusIdIndexKey, value);
+	users := []string{}
+	values := []string{}
+	var user string
+	var count int
+	var selectedIdx int
 
+	stub.PutState(newStatusIdIndexKey, value);
 	if voteToTransfer.Status == "2" {
-		count1, err := strconv.Atoi(voteToTransfer.Count1)
-		if err != nil {
-			return "", fmt.Errorf("%s", err)
-		}
-		count2, err := strconv.Atoi(voteToTransfer.Count2)
-		if err != nil {
-			return "", fmt.Errorf("%s", err)
+		count1, _ := strconv.Atoi(voteToTransfer.Count1)
+		count2, _ := strconv.Atoi(voteToTransfer.Count2)
+		if count1 > count2 {
+			voteToTransfer.Result = voteToTransfer.Choice1
+			users = strings.Split(voteToTransfer.Users1, ", ")
+			values = strings.Split(voteToTransfer.Values1, ", ")
+			count = count1
+		} else if count1 < count2 {
+			voteToTransfer.Result = voteToTransfer.Choice2
+			users = strings.Split(voteToTransfer.Users2, ", ")
+			values = strings.Split(voteToTransfer.Values2, ", ")
+			count = count2
+		} else {
+			voteToTransfer.Result = "무승부"
+			users1 := strings.Split(voteToTransfer.Users1, ", ")
+			users2 := strings.Split(voteToTransfer.Users2, ", ")
+			values1 := strings.Split(voteToTransfer.Values1, ", ")
+			values2 := strings.Split(voteToTransfer.Values2, ", ")
+			users = append(users1, users2...)
+			values = append(values1, values2...)
+			count = count1 + count2
 		}
 
 		seed := rand.NewSource(time.Now().UnixNano())
-		rnum := rand.New(seed)
+		rval := rand.New(seed)
+		rnum := rval.Intn(count)
+		
+		for i, v := range users {
+			weight, _ := strconv.Atoi(values[i])
+			rnum -= weight
+			if rnum <= 0 {
+				selectedIdx = i
+				user = v
+			}
+		}
 
-		if count1 > count2 {
-			voteToTransfer.Result = voteToTransfer.Choice1
-			users1 := strings.Split(voteToTransfer.Users1, ", ")
-			rusers1 := rnum.Intn(len(users1))
-			voteToTransfer.Winner = users1[rusers1]
-		} else if count1 < count2 {
-			voteToTransfer.Result = voteToTransfer.Choice2
-			users2 := strings.Split(voteToTransfer.Users2, ", ")
-			rusers2 := rnum.Intn(len(users2))
-			voteToTransfer.Winner = users2[rusers2]
-		} else {
-			voteToTransfer.Result = "무승부"
-			users := strings.Split(voteToTransfer.Users, ", ")
-			rusers := rnum.Intn(len(users))
-			voteToTransfer.Winner = users[rusers]
+		voteToTransfer.Winner = users[selectedIdx]
+		fmt.Printf(user)
+		fmt.Printf(voteToTransfer.Winner)
+
+		userAsString, err := getUserByName(stub, []string{voteToTransfer.Winner})
+		if userAsString == "" {
+			return "", fmt.Errorf("User does not exist: %s", err)
+		} 
+		userAsBytes := []byte(userAsString)
+
+		userToTransfer := User{}
+		err = json.Unmarshal(userAsBytes, &userToTransfer)
+		if err != nil {
+			return "", fmt.Errorf("An error occurred during unmarshal: %s", err)
+		}
+	
+		token, _ := strconv.Atoi(userToTransfer.Token)
+		reward, _ := strconv.Atoi(voteToTransfer.Reward)
+		token += reward
+		userToTransfer.Token = strconv.Itoa(token)
+
+		userJSONasBytes, _ := json.Marshal(userToTransfer)
+		err = stub.PutState(userToTransfer.Id, userJSONasBytes)
+		if err != nil {
+			return "", fmt.Errorf("Failed to set asset: %s", err);
 		}
 	}
-
 	voteJSONasBytes, _ := json.Marshal(voteToTransfer)
 	err = stub.PutState(id, voteJSONasBytes)
 	if err != nil {
-		return "", fmt.Errorf("%s", err)
+		return "", fmt.Errorf("Failed to set asset: %s", err);
 	}
 	return string(voteToTransfer.Result), nil
 }
 
 func choice(stub shim.ChaincodeStubInterface, args[] string) (string, error) {
-	if len(args) != 3 {
-		return "", fmt.Errorf("Incorrect arguments. Please input 3 args.")
+	if len(args) != 4 {
+		return "", fmt.Errorf("Incorrect arguments. Please input 4 args.")
 	}
 
 	id		:= args[0]
 	choice 	:= args[1]
 	user	:= args[2]
+	value	:= args[3] // 몇 개 투표할 지
 
 	voteAsBytes, err := stub.GetState(id)
 	if err != nil {
-		return "", fmt.Errorf("%s", err)
+		return "", fmt.Errorf("Vote does not exist: %s", err)
 	} else if voteAsBytes == nil {
 		return "", fmt.Errorf("Vote does not exist.")
 	}
@@ -520,23 +568,26 @@ func choice(stub shim.ChaincodeStubInterface, args[] string) (string, error) {
 	voteToTransfer := Vote{}
 	err = json.Unmarshal(voteAsBytes, &voteToTransfer)
 	if err != nil {
-		return "", fmt.Errorf("%s", err)
+		return "", fmt.Errorf("An error occurred during unmarshal: %s", err)
 	}
 
 	if voteToTransfer.Status != "1" {
 		return "", fmt.Errorf("This vote is not the time to choose.")
 	}
 
-	users := strings.Split(voteToTransfer.Users, ", ")
-	if contains(users, user) {
-		return "", fmt.Errorf("The user has already chosen.")
+	users1 := strings.Split(voteToTransfer.Users1, ", ")
+	users2 := strings.Split(voteToTransfer.Users2, ", ")
+	users := append(users1, users2...)
+	if voteToTransfer.Category == "0" {
+		if contains(users, user) != -1 {
+			return "", fmt.Errorf("The user has already chosen.")
+		}
 	}
+	
 /* --------------------------------------------------------------- */
-	userArray := []string{user}
-
-	userAsString, err := getUserByName(stub, userArray)
+	userAsString, err := getUserByName(stub, []string{user})
 	if err != nil {
-		return "", fmt.Errorf("%s", err)
+		return "", fmt.Errorf("User does not exist: %s", err)
 	} 
 
 	userAsBytes := []byte(userAsString)
@@ -544,7 +595,7 @@ func choice(stub shim.ChaincodeStubInterface, args[] string) (string, error) {
 	userToTransfer := User{}
 	err = json.Unmarshal(userAsBytes, &userToTransfer)
 	if err != nil {
-		return "", fmt.Errorf("%s", err)
+		return "", fmt.Errorf("An error occurred during unmarshal: %s", err)
 	}
 
 	if userToTransfer.Votes != "" {
@@ -555,61 +606,63 @@ func choice(stub shim.ChaincodeStubInterface, args[] string) (string, error) {
 		userToTransfer.Choices += ", "
 	}
 
-	if voteToTransfer.Category == "1" { // 유료 투표
-		token, err := strconv.Atoi(userToTransfer.Token)
-		if err != nil {
-			return "", fmt.Errorf("%s", err)
+	if userToTransfer.Values != "" {
+		userToTransfer.Values += ", "
+	}
+	
+	nValue, _ := strconv.Atoi(value);
+	if voteToTransfer.Category == "1" { // 유료 투표	
+		nValue *= 100
+		token, _ := strconv.Atoi(userToTransfer.Token)
+		token -= nValue
+		if token < 0 {
+			return "", fmt.Errorf("Not enough token")
 		}
-		token -= 1
 		userToTransfer.Token = strconv.Itoa(token)
 	}
-
+	userToTransfer.Values += strconv.Itoa(nValue)
 	userToTransfer.Votes += voteToTransfer.Title
 
 /* --------------------------------------------------------------- */
 
 	if choice == voteToTransfer.Choice1 {
-		count, err := strconv.Atoi(voteToTransfer.Count1)
-		if err != nil {
-			return "", fmt.Errorf("%s", err)
-		}
-		count += 1
+		count, _ := strconv.Atoi(voteToTransfer.Count1)
+		count += nValue
 		voteToTransfer.Count1 = strconv.Itoa(count)
 		userToTransfer.Choices += voteToTransfer.Choice1
 		if voteToTransfer.Users1 != "" {
 			voteToTransfer.Users1 += ", "
 		}
-		voteToTransfer.Users1 += user
-	} else {
-		count, err := strconv.Atoi(voteToTransfer.Count2)
-		if err != nil {
-			return "", fmt.Errorf("%s", err)
+		if voteToTransfer.Values1 != "" {
+			voteToTransfer.Values1 += ", "
 		}
-		count += 1
+		voteToTransfer.Users1 += user
+		voteToTransfer.Values1 += value
+	} else {
+		count, _ := strconv.Atoi(voteToTransfer.Count2)
+		count += nValue
 		voteToTransfer.Count2 = strconv.Itoa(count)
 		userToTransfer.Choices += voteToTransfer.Choice2
 		if voteToTransfer.Users2 != "" {
 			voteToTransfer.Users2 += ", "
 		}
+		if voteToTransfer.Values2 != "" {
+			voteToTransfer.Values2 += ", "
+		}
 		voteToTransfer.Users2 += user
+		voteToTransfer.Values2 += value
 	}
-
-	if voteToTransfer.Users != "" {
-		voteToTransfer.Users += ", "
-	}
-
-	voteToTransfer.Users += user
 
 	voteJSONasBytes, _ := json.Marshal(voteToTransfer)
 	err = stub.PutState(id, voteJSONasBytes)
 	if err != nil {
-		return "", fmt.Errorf("%s", err)
+		return "", fmt.Errorf("Failed to set asset: %s", err);
 	}
 
 	userJSONasBytes, _ := json.Marshal(userToTransfer)
 	err = stub.PutState(userToTransfer.Id, userJSONasBytes)
 	if err != nil {
-		return "", fmt.Errorf("%s", err)
+		return "", fmt.Errorf("Failed to set asset: %s", err);
 	}
 
 /* --------------------------------------------------------------- */
@@ -637,7 +690,7 @@ func getHistoryByVoteId(stub shim.ChaincodeStubInterface, args[] string) (string
 	for historyIterator.HasNext() {
 		response, err := historyIterator.Next()
 		if err != nil {
-			return "", fmt.Errorf("%s", err)
+			return "", fmt.Errorf("An error occurred while querying the history: %s", err)
 		}
 		if comma == true {
 			buffer.WriteString(", ")
@@ -676,13 +729,13 @@ func getHistoryByVoteId(stub shim.ChaincodeStubInterface, args[] string) (string
 
 /* --------------------------------------- QUIZ --------------------------------------- */
 
-func contains(slice []string, item string) bool {
-	for _, v := range slice {
+func contains(slice []string, item string) int {
+	for i, v := range slice {
 		if v == item {
-			return true
+			return i
 		}
 	}
-	return false
+	return -1
 }
 
 func main() {

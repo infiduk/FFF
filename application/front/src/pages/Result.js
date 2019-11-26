@@ -33,7 +33,7 @@ export default class Result extends Component {
 
             res.status === 200
                 ? this.setState({ list: json.data.votes })
-                : console.log(json.data.msg)
+                : alert('결과 조회에 실패하였습니다.')
         } catch (err) {
             console.log(err)
         }

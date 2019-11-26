@@ -5,7 +5,7 @@ const fs = require('fs');
 const path = require('path');
 
 const ccpPath = path.resolve(__dirname, '..', '..', 'network', 'connection.json');
-console.log("ccpPath: " + ccpPath);
+console.log("CCP Path: " + ccpPath);
 const ccpJSON = fs.readFileSync(ccpPath, 'utf8');
 const ccp = JSON.parse(ccpJSON);
 
@@ -23,7 +23,6 @@ class VoteModel {
                 const userExists = await wallet.exists(key);
                 if (!userExists) {
                     console.log('An identity for the user does not exist in the wallet');
-                    console.log('Run the registerUser.js application before retrying');
                     reject('An identity for the user does not exist in the wallet')
                 }
 
@@ -42,7 +41,6 @@ class VoteModel {
                     'setVote', 
                     vote.id.toString(), 
                     vote.category.toString(), 
-                    vote.title.toString(), 
                     vote.begin.toString(), 
                     vote.end.toString(), 
                     vote.choice1.toString(), 
@@ -52,7 +50,7 @@ class VoteModel {
 
                 // Disconnect from the gateway.
                 await gateway.disconnect();
-                resolve("The vote has been successfully registered.")
+                resolve("투표가 성공적으로 등록되었습니다.")
             } catch (err) {
                 reject(err);
             }

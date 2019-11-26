@@ -48,7 +48,7 @@ export default class SignIn extends Component {
                 window.sessionStorage.setItem('votes', json.data.user.votes)
                 window.location.assign('/')
             } else {
-                console.log(json.msg)
+                alert('로그인에 실패하였습니다.')
             }
         } catch (err) {
             console.log(err)

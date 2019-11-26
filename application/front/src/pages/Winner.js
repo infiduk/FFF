@@ -36,7 +36,7 @@ export default class Winner extends Component {
                 const json = await res.json()
                 this.setState({ winner: json.winner })
             } else {
-                console.log('우승자 조회에 실패하였습니다.')
+                alert('우승자 조회에 실패하였습니다.')
             }
         } catch (err) {
             console.log(err)

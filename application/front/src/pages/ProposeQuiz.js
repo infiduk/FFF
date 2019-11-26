@@ -53,7 +53,7 @@ export default class ProposeQuiz extends Component {
             
             res.status === 200
                 ? window.location.assign('/propose')
-                : console.log('문제 제안에 실패하였습니다.')
+                : alert('문제 제안에 실패하였습니다.')
         } catch (err) {
             console.log(err)
         }

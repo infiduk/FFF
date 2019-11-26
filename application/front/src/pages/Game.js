@@ -40,7 +40,8 @@ export default class Game extends Component {
                 const json = await res.json()
                 this.setState({ detail: json })
             } else {
-                console.log('상세 조회에 실패하였습니다.')
+                alert('투표 조회에 실패하였습니다.')
+                window.location.assign('/')
             }
         } catch (err) {
             console.log(err)
@@ -81,7 +82,7 @@ export default class Game extends Component {
                 window.sessionStorage.setItem('votes', json.data.user.votes)
                 window.location.assign('/')
             } else {
-                console.log(json.msg)
+                alert('투표에 실패하였습니다.')
             }
         } catch (err) {
             console.log(err)

@@ -46,12 +46,12 @@ export default class SignUp extends Component {
                 })
                 res.status === 200
                     ? window.location.assign('/signIn')
-                    : console.log('회원가입에 실패하였습니다.')
+                    : alert('회원가입에 실패하였습니다.')
             } catch (err) {
                 console.log(err)
             }
         } else {
-            console.log('비밀번호가 일치하지 않습니다.')
+            alert('비밀번호가 일치하지 않습니다.')
         }
     }
 

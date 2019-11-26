@@ -36,7 +36,7 @@ export default class GameResult extends Component {
                 const json = await res.json()
                 this.setState({ detail: json })
             } else {
-                console.log('상세 조회에 실패하였습니다.')
+                alert('상세 조회에 실패하였습니다.')
             }
         } catch (err) {
             console.log(err)
@@ -72,9 +72,7 @@ export default class GameResult extends Component {
                         </div>
                     </div>
                     <Button type='button' style={{ padding: 10, marginTop: 25, backgroundColor: '#d8b1d6', borderColor: '#d8b1d6' }} onClick={this.handleGoHistory} block>히스토리 조회</Button>
-                    {detail.category === '1' &&
-                        <Button type='button' style={{ padding: 10, marginTop: 25, backgroundColor: '#d8b1d6', borderColor: '#d8b1d6' }} onClick={this.handleGoWinner} block>당첨자 조회</Button>
-                    }
+                    <Button type='button' style={{ padding: 10, marginTop: 25, backgroundColor: '#d8b1d6', borderColor: '#d8b1d6' }} onClick={this.handleGoWinner} block>당첨자 조회</Button>
                 </div>
             </div>
         )

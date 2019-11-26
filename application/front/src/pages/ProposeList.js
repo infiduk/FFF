@@ -57,7 +57,7 @@ export default class Propose extends Component {
 
             res.status === 200
                 ? window.location.assign('/propose')
-                : console.log('제안 추천에 실패하였습니다')
+                : alert('제안 추천에 실패하였습니다')
         } catch (err) {
             console.log(err)
         }

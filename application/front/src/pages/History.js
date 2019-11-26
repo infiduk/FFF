@@ -38,7 +38,7 @@ export default class History extends Component {
 
             res.status === 200
                 ? this.setState({ list: json.data })
-                : console.log(json.data.msg)
+                : alert('히스토리 조회에 실패하였습니다.')
         } catch (err) {
             console.log(err)
         }
