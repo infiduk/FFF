@@ -29,7 +29,7 @@ export default class SignIn extends Component {
         }
 
         try {
-            const res = await fetch('http://ch-4ml.iptime.org:8080/login', {
+            const res = await fetch('http://ch-4ml.iptime.org:8080/user/login', {
                 method: 'POST',
                 headers: {
                     'Accept': 'application/json',

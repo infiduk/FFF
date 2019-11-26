@@ -81,7 +81,7 @@ export const ProposeList = props => {
 
 export const MyPageList = props => {
     return (
-        <ListGroup.Item action href={props.href} className='MyPageList'>
+        <ListGroup.Item className='MyPageList'>
             <h5>{props.title}</h5>
         </ListGroup.Item>
     )

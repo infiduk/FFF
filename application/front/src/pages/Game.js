@@ -59,7 +59,7 @@ export default class Game extends Component {
         let voteInfo = {
             'id': id,
             'choose': e.target.value,
-            'values': values
+            'value': values
         }
 
         try {

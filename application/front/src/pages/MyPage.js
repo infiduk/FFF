@@ -11,8 +11,38 @@ export default class MyPage extends Component {
         super(props)
         this.state = {
             name: window.sessionStorage.getItem('name'),
-            token: window.sessionStorage.getItem('token'),
-            votes: window.sessionStorage.getItem('votes') || ''
+            token: '',
+            votes: ''
+        }
+    }
+
+    componentDidMount() {
+        window.sessionStorage.getItem('name') ? this.user() : window.location.assign('/signin')
+    }
+
+    // 유저 정보 조회 API
+    user = async () => {
+        try {
+            const res = await fetch('http://ch-4ml.iptime.org:8080/user', {
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'Cache': 'no-cache'
+                },
+                credentials: 'include',
+            })
+
+            const json = await res.json()
+
+            window.sessionStorage.setItem('token', json.data.user.token)
+            window.sessionStorage.setItem('votes', json.data.user.votes)
+
+            this.setState({
+                token: json.data.user.token,
+                votes: json.data.user.votes
+            })
+        } catch (err) {
+            console.log(err)
         }
     }
 
@@ -47,7 +77,7 @@ export default class MyPage extends Component {
                         <ListGroup style={{ marginLeft: 5, marginRight: 5 }}>
                             {list.map(list => {
                                 return (
-                                    <MyPageList key={list.toString()} title={list} href={`/gameResult/${list.id}`} />
+                                    <MyPageList key={list.toString()} title={list} />
                                 )
                             })}
                             <hr />
