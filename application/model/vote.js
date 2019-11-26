@@ -44,7 +44,8 @@ class VoteModel {
                     vote.begin.toString(), 
                     vote.end.toString(), 
                     vote.choice1.toString(), 
-                    vote.choice2.toString()
+                    vote.choice2.toString(),
+                    vote.reward.toString()
                 );
                 console.log('Transaction has been submitted');
 
@@ -277,7 +278,7 @@ class VoteModel {
                 const contract = network.getContract('sacc');
 
                 // Submit the specified transaction.
-                await contract.submitTransaction('choice', vote.id.toString(), vote.choose.toString(), vote.user.toString());
+                await contract.submitTransaction('choice', vote.id.toString(), vote.choose.toString(), vote.user.toString(), vote.value.toString());
                 console.log('Transaction has been submitted');
 
                 const result = await contract.evaluateTransaction('getUserByName', vote.user.toString());

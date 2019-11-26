@@ -13,11 +13,10 @@ boardRouter.post('/post', async (req, res) => {
         period: req.body.period, // 희망 투표 기간(일)
         choice1: req.body.choice1,
         choice2: req.body.choice2,
-        writer: user.name,
+        writer: user.name
     }
     try {
         const result = await boardModel.setPost(post);
-        console.log(result);
         res.status(200).send(result);
     } catch (err) {
         console.log(err);

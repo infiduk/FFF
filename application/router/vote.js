@@ -13,11 +13,10 @@ const crypto = require('crypto');
 // 투표 생성
 voteRouter.post('/vote', async (req, res) => { 
     const user = req.session.user;
+    const hname = crypto.createHash('sha256').update(user.name).digest('hex');
+    const key = crypto.createHash('sha256').update(hname + user.hpw).digest('hex');
     try {
         // Request body parsing
-        const hname = crypto.createHash('sha256').update(user.name).digest('hex');
-        const key = crypto.createHash('sha256').update(hname + user.hpw).digest('hex');
-
         const vote = { 
             id      : await indexGen.generate(), 
             category: req.body.category, 
@@ -26,6 +25,7 @@ voteRouter.post('/vote', async (req, res) => {
             end     : req.body.end,
             choice1 : req.body.choice1, 
             choice2 : req.body.choice2,
+            reward  : req.body.reward
         }
         const result = await voteModel.setVote(key, vote);
         
@@ -45,10 +45,9 @@ voteRouter.post('/vote', async (req, res) => {
 // 목록 조회
 voteRouter.get('/vote', async (req, res) => {
     const user = req.session.user;
+    const hname = crypto.createHash('sha256').update(user.name).digest('hex');
+    const key = crypto.createHash('sha256').update(hname + user.hpw).digest('hex');
     try {
-        const hname = crypto.createHash('sha256').update(user.name).digest('hex');
-        const key = crypto.createHash('sha256').update(hname + user.hpw).digest('hex');
-
         const result = await voteModel.getAllVotes(key);
         const obj = JSON.parse(result);
         const data = { votes: obj, msg: '투표 목록 조회 성공' }
@@ -63,12 +62,10 @@ voteRouter.get('/vote', async (req, res) => {
 // 상세 조회
 voteRouter.post('/vote/detail', async (req, res) => {
     const user = req.session.user;
-
+    const hname = crypto.createHash('sha256').update(user.name).digest('hex');
+    const key = crypto.createHash('sha256').update(hname + user.hpw).digest('hex');
+    const id = req.body.id;
     try {
-        const hname = crypto.createHash('sha256').update(user.name).digest('hex');
-        const key = crypto.createHash('sha256').update(hname + user.hpw).digest('hex');
-        const id = req.body.id;
-
         const result = await voteModel.getVote(key, id);
         const obj = JSON.parse(result);
         res.status(200).json(obj);
@@ -83,21 +80,21 @@ voteRouter.post('/vote/detail', async (req, res) => {
 // 투표
 voteRouter.post('/vote/choose', async (req, res) => {
     const user = req.session.user;
-
+    const hname = crypto.createHash('sha256').update(user.name).digest('hex');
+    const key = crypto.createHash('sha256').update(hname + user.hpw).digest('hex');
+    const vote = {
+        id: req.body.id,
+        choose: req.body.choose,
+        user: user.name,
+        value: req.body.value
+    }
     try {
-        const hname = crypto.createHash('sha256').update(user.name).digest('hex');
-        const key = crypto.createHash('sha256').update(hname + user.hpw).digest('hex');
-        const vote = {
-            id: req.body.id,
-            choose: req.body.choose,
-            user: user.name
-        }
-
         const result = await voteModel.choice(key, vote); // user 정보 최신화
         const obj = JSON.parse(result);
         req.session.user.token = obj.token;                        
         req.session.user.votes = obj.votes;                        
-        req.session.user.choices = obj.choices;                    
+        req.session.user.choices = obj.choices;
+        req.session.user.values = obj.values;              
         const data = { user: req.session.user, msg: '투표 성공' }   
         res.status(200).json({data: data});
     } catch (error) {
@@ -110,12 +107,10 @@ voteRouter.post('/vote/choose', async (req, res) => {
 // 퀴즈 내역 조회
 voteRouter.post('/vote/history', async (req, res) => {
     const user = req.session.user;
-
+    const hname = crypto.createHash('sha256').update(user.name).digest('hex');
+    const key = crypto.createHash('sha256').update(hname + user.hpw).digest('hex');
+    const id = req.body.id; // vote id
     try {
-        const hname = crypto.createHash('sha256').update(user.name).digest('hex');
-        const key = crypto.createHash('sha256').update(hname + user.hpw).digest('hex');
-        const id = req.body.id; // vote id
-
         const result = await voteModel.getHistoryByVoteId(key, id);
         const obj = JSON.parse(result);
         res.status(200).json({data: obj, msg: '퀴즈 내역 조회 성공'});
