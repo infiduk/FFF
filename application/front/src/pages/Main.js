@@ -3,7 +3,7 @@ import React, { Component } from 'react'
 import { ListGroup } from 'react-bootstrap'
 import 'bootstrap/dist/css/bootstrap.min.css'
 
-import { MainList } from '../components/List'
+import { MainList, ToBeList } from '../components/List'
 
 export default class Main extends Component {
     constructor(props) {
@@ -47,15 +47,27 @@ export default class Main extends Component {
                     <ListGroup variant='flush'>
                         <br />
                         {this.state.list.map(list => {
-                            return list.status === '1' && (
-                                <MainList
-                                    key={`list-${list.id}`}
-                                    href={`/game/${list.id}`}
-                                    title={list.title}
-                                    date={list.end}
-                                    category={list.category}
-                                />
-                            )
+                            if (list.status === '1') {
+                                return (
+                                    <MainList
+                                        key={`list-${list.id}`}
+                                        href={`/game/${list.id}`}
+                                        title={list.title}
+                                        date={list.end}
+                                        category={list.category}
+                                    />
+                                )
+                            } else if (list.status === '0') {
+                                return (
+                                    <ToBeList
+                                        key={`list-${list.id}`}
+                                        href={`/game/${list.id}`}
+                                        title={list.title}
+                                        date={list.end}
+                                        category={list.category}
+                                    />
+                                )
+                            }
                         })}
                         <hr />
                     </ListGroup>
